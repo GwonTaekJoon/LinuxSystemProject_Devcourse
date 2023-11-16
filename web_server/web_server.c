@@ -7,9 +7,30 @@
 
 int create_web_server()
 {
-    pid_t systemPid;
+    pid_t web_server_Pid;
 
-    printf("여기서 Web Server 프로세스를 생성합니다.\n");
+    printf("creating web_server...\n");
+
+    switch (web_server_Pid = fork())
+    {
+    case -1:
+        printf("web_server fork failed\n");
+        break;
+
+    case 0:
+        if (execl("/usr/local/bin/filebrowser", "filebrowser", "-p", "8284", (char *) NULL)) {
+            /*int execl(char const *path, char const *arg0, ...);*/
+
+            printf("web_server exec failed\n");
+        }
+        break;
+    
+    
+    default:
+        break;
+    }
+
+
 
     return 0;
 }

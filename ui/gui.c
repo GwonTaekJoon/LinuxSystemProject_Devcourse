@@ -7,9 +7,32 @@
 
 int create_gui()
 {
-    pid_t systemPid;
+    pid_t gui_Pid;
 
-    printf("여기서 GUI 프로세스를 생성합니다.\n");
+    printf("creating gui_server...\n");
+
+    sleep(5);
+
+    switch (gui_Pid = fork())
+    {
+    case -1:
+        printf("gui fork failed\n");
+        break;
+    
+    case 0:
+        if (execl("/usr/bin/google-chrome-stable", "google-chrome-stable", "http://localhost:8284", NULL)) {
+            /*int execl(char const *path, char const *arg0, ...);*/
+            printf("gui exec failed\n");
+        }
+
+        break;
+
+
+    default:
+        break;
+    }
+
+
 
     return 0;
 }

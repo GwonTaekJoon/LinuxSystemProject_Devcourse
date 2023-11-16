@@ -8,7 +8,7 @@
 
 int input()
 {
-    printf("나 input 프로세스!\n");
+    printf("input()...\n");
 
     while (1) {
         sleep(1);
@@ -19,10 +19,29 @@ int input()
 
 int create_input()
 {
-    pid_t systemPid;
-    const char *name = "input";
+    pid_t inputPid;
+    const char *processName = "input";
 
-    printf("여기서 input 프로세스를 생성합니다.\n");
+    printf("creating input...\n");
+
+    switch (inputPid = fork())
+    {
+    case -1:
+        printf("input fork failed\n");
+        break;
+    
+    case 0:
+        if(prctl(PR_SET_NAME, (unsigned long)processName, NULL, NULL, NULL) == 0){
+            /* man prctl -> int prctl(int option, unsinged long arg2, unsigned long arg2, 
+             unsigned long arg3, unsigned long arg4, unsigned long arg5)*/
+            input();
+            break;
+
+        }
+        perror("prctl()");
+    default:
+        break;
+    }
 
     return 0;
 }

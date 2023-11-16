@@ -8,7 +8,7 @@
 
 int system_server()
 {
-    printf("나 system_server 프로세스!\n");
+    printf("system_server Process...!\n");
 
     while (1) {
         sleep(1);
@@ -19,10 +19,35 @@ int system_server()
 
 int create_system_server()
 {
-    pid_t systemPid;
-    const char *name = "system_server";
+    pid_t system_server_Pid;
+    const char *processName = "system_server";
 
-    printf("여기서 시스템 프로세스를 생성합니다.\n");
+    printf("creating system_server...\n");
+
+    switch (system_server_Pid = fork())
+    {
+
+    case -1:
+        printf("system_server fork failed\n");
+        break;
+    case 0:
+        if(prctl(PR_SET_NAME, (unsigned long)processName, NULL, NULL, NULL) == 0) {
+            /* man prctl -> int prctl(int option, unsinged long arg2, unsigned long arg2, 
+             unsigned long arg3, unsigned long arg4, unsigned long arg5)*/
+
+            system_server();
+            break;
+        }
+        
+        perror("prctl()");
+        break;
+    
+    default:
+        break;
+    }
+
+
+
 
     return 0;
 }
