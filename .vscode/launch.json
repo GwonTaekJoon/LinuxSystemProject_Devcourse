@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+      {
+        "name": "toy_project",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/bin/toy_system",
+        "args": [
+
+        ],
+        "stopAtEntry": true,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "gdb",
+        "setupCommands": [
+            {
+            "description": "Enable pretty-printing for gdb",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
+            }
+        ],
+    }
+    ],
+}
