@@ -3,6 +3,8 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <time.h>
+#include <pthread.h>
+#include <assert.h>
 
 #include <system_server.h>
 #include <gui.h>
@@ -46,6 +48,38 @@ int posix_sleep_ms(unsigned int timeout_ms)
 }
 
 
+void *watchdog_thread (void * arg) {
+    printf("watchdog_thread...\n");
+    while(1) {
+        posix_sleep_ms(1000);
+    }
+
+}
+
+void *disk_service_thread (void * arg) {
+    printf("disk_service_thread...\n");
+    while(1) {
+        posix_sleep_ms(1000);
+    }
+
+}
+
+void *monitor_thread (void * arg) {
+    printf("monitor_thread...\n");
+    while(1) {
+        posix_sleep_ms(1000);
+    }
+
+}
+void *camera_sevice_thread (void * arg) {
+    printf("camera_service_thread...\n");
+    while(1) {
+        posix_sleep_ms(1000);
+    }
+
+}
+
+
 
 int system_server()
 {
@@ -54,6 +88,10 @@ int system_server()
     struct sigaction  sa;
     struct sigevent   sev;
     timer_t *tidlist;
+    pthread_t watchdog_thread_tid;
+    pthread_t monitor_thread_tid;
+    pthread_t disk_service_thread_tid;
+    pthread_t camera_service_thread_tid;
     printf("system_server Process...!\n");
 
     memset(&sa, 0, sizeof(sigaction));
@@ -81,6 +119,28 @@ int system_server()
         exit(-1);
 
     }
+
+    if(pthread_create(&watchdog_thread_tid, NULL, watchdog_thread, NULL) == -1) {
+        fprintf(stderr,"pthread_create - watchdog");
+    }
+    if(pthread_create(&disk_service_thread_tid, NULL, disk_service_thread, NULL) == -1) {
+        fprintf(stderr,"pthread_create - disk_service");
+    }
+    if(pthread_create(&monitor_thread_tid, NULL, monitor_thread, NULL) == -1) {
+        fprintf(stderr,"pthread_create - monitor");
+    }
+    if(pthread_create(&camera_service_thread_tid, NULL, camera_sevice_thread, NULL) == -1) {
+        fprintf(stderr,"pthread_create - camera_service");
+    }
+
+    pthread_detach(watchdog_thread_tid);
+    pthread_detach(disk_service_thread_tid);
+    pthread_detach(monitor_thread_tid);
+    pthread_detach(camera_service_thread_tid);
+
+
+
+
 
 
     while (1) {
