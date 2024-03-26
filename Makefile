@@ -1,10 +1,17 @@
 # Compiler and Compiler Flags
 CC = gcc
+CXX = g++
 CFLAGS = -Wall -g -Iui -Iweb_server -Isystem
-
+CXXFLAGS = -Wall -g -std=c++14 -Ihal
+CXXLIBS = -lpthread -lm -lrt
 # Source files and Object files
-SRC = main.c ui/gui.c ui/input.c web_server/web_server.c system/system_server.c
-OBJ = $(SRC:.c=.o)
+CSRC = main.c ui/gui.c ui/input.c web_server/web_server.c system/system_server.c
+CXXSRC = hal/camera_HAL.cpp hal/ControlThread.cpp
+COBJ = $(CSRC:.c=.o)
+CXXOBJ = $(CXXSRC:.cpp=.o)
+
+OBJ = $(COBJ) $(CXXOBJ)
+
 
 # Target executable
 TARGET_DIR=./bin/
@@ -15,11 +22,14 @@ all: $(TARGET)
 
 # Rule to link object files to create the executable
 $(TARGET): $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CXX) -o $@ $^ $(CXXLIBS)
 
 # Rule to compile source files into object files
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
+
+%.o: $.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean target for removing compiled files
 clean:
