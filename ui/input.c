@@ -18,7 +18,7 @@
 
 #define TOY_TOK_BUFSIZE 64
 #define TOY_TOK_DELIM "\t\r\n\a"
-
+#define TOY_BUFFSIZE 1024
 typedef struct _sig_ucontext {
     unsigned long uc_flags;
     struct ucontext *uc_link;
@@ -26,6 +26,11 @@ typedef struct _sig_ucontext {
     struct sigcontext uc_mcontext;
     sigset_t uc_sigmask;
 } sig_ucontext_t;
+
+static pthread_mutex_t global_message_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static char global_message[TOY_BUFFSIZE];
+// Warning global variable - global_message => mutex
 
 void segfault_handler(int sig_num, siginfo_t * info, void * ucontext) {
   void * array[50];
@@ -67,11 +72,22 @@ void segfault_handler(int sig_num, siginfo_t * info, void * ucontext) {
  */
 void *sensor_thread(void* arg)
 {
+
+    char saved_message[TOY_BUFFSIZE];
     char *s = arg;
+    int i = 0;
 
     printf("%s", s);
 
     while (1) {
+	i = 0;
+	//require mutex
+	while(global_message[i] != NULL) {
+		printf("%c", global_message[i]);
+		fflush(stdout);
+		posix_sleep_ms(500);
+		++i;
+	}
         posix_sleep_ms(5000);
     }
 
@@ -85,11 +101,13 @@ void *sensor_thread(void* arg)
 int toy_send(char **args);
 int toy_shell(char **args);
 int toy_exit(char **args);
+int toy_mutex(char **args);
 
 char *builtin_str[] = {
     "send",
     "sh",
-    "exit"
+    "exit",
+    "mu"
 };
 
 int (*builtin_func[]) (char **) = {
@@ -108,6 +126,24 @@ int toy_send(char **args)
     printf("send message: %s\n", args[1]);
 
     return 1;
+}
+
+int toy_mutex(char **args)
+{
+
+	if(args[1] == NULL) {
+
+		return 1;
+	}
+
+	printf("save message : %s\n", args[1]);
+	//require mutex
+	pthread_mutex_lock(&global_message_mutex);
+	strcpy(global_message, args[1]);
+	pthread_mutex_unlock(&global_message_mutex);
+
+	return 1;
+
 }
 
 int toy_exit(char **args)
@@ -227,7 +263,7 @@ void *command_thread(void* arg)
     char *s = arg;
 
     printf("%s", s);
-    
+
     toy_loop();
 
     return 0;
@@ -241,7 +277,7 @@ int input()
     pthread_t command_thread_tid;
     pthread_t sensor_thread_tid;
 
-    
+
 
 
     /*  signal */
@@ -276,8 +312,8 @@ int input()
     pthread_detach(sensor_thread_tid);
 
 
-    
-    
+
+
     while (1) {
         sleep(1);
     }
@@ -297,10 +333,10 @@ int create_input()
     case -1:
         printf("input fork failed\n");
         break;
-    
+
     case 0:
         if(prctl(PR_SET_NAME, (unsigned long)processName, NULL, NULL, NULL) == 0){
-            /* man prctl -> int prctl(int option, unsinged long arg2, unsigned long arg2, 
+            /* man prctl -> int prctl(int option, unsinged long arg2, unsigned long arg2,
              unsigned long arg3, unsigned long arg4, unsigned long arg5)*/
             input();
             break;
