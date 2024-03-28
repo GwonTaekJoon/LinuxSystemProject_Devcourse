@@ -10,8 +10,13 @@
 #include <gui.h>
 #include <input.h>
 #include <web_server.h>
+#include <camera_HAL.h>
 
 static int toy_timer = 0;
+pthread_mutex_t system_loop_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t system_loop_cond = PTHREAD_COND_INITIALIZER;
+bool	system_loop_exit = false;
+
 
 
 void sighandler_timer() {
@@ -72,7 +77,13 @@ void *monitor_thread (void * arg) {
 
 }
 void *camera_sevice_thread (void * arg) {
+    char *s = arg;
     printf("camera_service_thread...\n");
+    printf("%s",s);
+
+    toy_camera_open();
+    toy_camera_take_picture();
+
     while(1) {
         posix_sleep_ms(1000);
     }
@@ -80,6 +91,15 @@ void *camera_sevice_thread (void * arg) {
 }
 
 
+void signal_exit(void) {
+
+	pthread_mutex_lock(&system_loop_mutex);
+	printf("loop exit by signal");
+	system_loop_exit = true;
+	pthread_cond_signal(&system_loop_cond);
+	pthread_mutex_unlock(&system_loop_mutex);
+
+}
 
 int system_server()
 {
@@ -88,11 +108,15 @@ int system_server()
     struct sigaction  sa;
     struct sigevent   sev;
     timer_t *tidlist;
+
     pthread_t watchdog_thread_tid;
     pthread_t monitor_thread_tid;
     pthread_t disk_service_thread_tid;
     pthread_t camera_service_thread_tid;
-    printf("system_server Process...!\n");
+
+
+
+
 
     memset(&sa, 0, sizeof(sigaction));
     sigemptyset(&sa.sa_mask);
@@ -101,9 +125,9 @@ int system_server()
     sa.sa_flags = 0;
     sa.sa_handler = sighandler_timer;
 
-    ts.it_value.tv_sec = 5;
+    ts.it_value.tv_sec = 10;
     ts.it_value.tv_nsec = 0;
-    ts.it_interval.tv_sec = 5;
+    ts.it_interval.tv_sec = 10;
     ts.it_interval.tv_nsec = 0;
 
     if(sigaction(SIGALRM, &sa, NULL) == -1) {
@@ -140,12 +164,25 @@ int system_server()
 
 
 
+   printf("system init done. waiting...\n");
+
+   pthread_mutex_lock(&system_loop_mutex);
+
+
+   while(system_loop_exit == false) {
+
+	pthread_cond_wait(&system_loop_cond, &system_loop_mutex);
+
+
+   }
+
+
+   pthread_mutex_unlock(&system_loop_mutex);
+
+   printf("<==== system\n");
 
 
 
-    while (1) {
-        posix_sleep_ms(5000);
-    }
 
     return 0;
 }
@@ -165,16 +202,16 @@ int create_system_server()
         break;
     case 0:
         if(prctl(PR_SET_NAME, (unsigned long)processName, NULL, NULL, NULL) == 0) {
-            /* man prctl -> int prctl(int option, unsinged long arg2, unsigned long arg2, 
+            /* man prctl -> int prctl(int option, unsinged long arg2, unsigned long arg2,
              unsigned long arg3, unsigned long arg4, unsigned long arg5)*/
 
             system_server();
             break;
         }
-        
+
         perror("prctl()");
         break;
-    
+
     default:
         break;
     }

@@ -1,8 +1,8 @@
 # Compiler and Compiler Flags
 CC = gcc
 CXX = g++
-CFLAGS = -Wall -g -Iui -Iweb_server -Isystem
-CXXFLAGS = -Wall -g -std=c++14 -Ihal
+CFLAGS = -Wall -g -Iui -Iweb_server -Isystem -Ihal
+CXXFLAGS = $(CFLAGS) -std=c++14
 CXXLIBS = -lpthread -lm -lrt
 # Source files and Object files
 CSRC = main.c ui/gui.c ui/input.c web_server/web_server.c system/system_server.c
