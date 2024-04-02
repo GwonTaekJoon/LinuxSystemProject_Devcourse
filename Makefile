@@ -1,7 +1,7 @@
 # Compiler and Compiler Flags
 CC = gcc
 CXX = g++
-CFLAGS = -Wall -g -Iui -Iweb_server -Isystem -Ihal
+CFLAGS = -Wall -g -Iui -Iweb_server -Isystem -Ihal -I./
 CXXFLAGS = $(CFLAGS) -std=c++14
 CXXLIBS = -lpthread -lm -lrt
 # Source files and Object files

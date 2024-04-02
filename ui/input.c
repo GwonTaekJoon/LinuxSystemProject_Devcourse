@@ -15,6 +15,8 @@
 #include <sys/wait.h>
 #include <pthread.h>
 #include <assert.h>
+#include <mqueue.h>
+#include <toy_message.h>
 
 #define TOY_TOK_BUFSIZE 64
 #define TOY_TOK_DELIM "\t\r\n\a"
@@ -31,6 +33,12 @@ static pthread_mutex_t global_message_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static char global_message[TOY_BUFFSIZE];
 // Warning global variable - global_message => mutex
+
+static mqd_t watchdog_queue;
+static mqd_t monitor_queue;
+static mqd_t disk_queue;
+static mqd_t camera_queue;
+
 
 void segfault_handler(int sig_num, siginfo_t * info, void * ucontext) {
   void * array[50];
@@ -102,18 +110,23 @@ int toy_send(char **args);
 int toy_shell(char **args);
 int toy_exit(char **args);
 int toy_mutex(char **args);
+int toy_message_queue(char **args);
+
 
 char *builtin_str[] = {
     "send",
     "sh",
     "exit",
-    "mu"
+    "mu",
+    "mq"
 };
 
 int (*builtin_func[]) (char **) = {
     &toy_send,
     &toy_shell,
-    &toy_exit
+    &toy_exit,
+    &toy_mutex,
+    &toy_message_queue
 };
 
 int toy_num_builtins()
@@ -143,6 +156,31 @@ int toy_mutex(char **args)
 	pthread_mutex_unlock(&global_message_mutex);
 
 	return 1;
+
+}
+
+
+int toy_message_queue(char **args)
+{
+
+    int mqretcode;
+    toy_msg_t msg;
+
+    if(args[1] == NULL || args[2] == NULL) {
+	return 1;
+    }
+
+    if(!strcmp(args[1], "camera")) {
+	msg.msg_type = atoi(args[2]);
+	msg.param1 = 0;
+	msg.param2 = 0;
+	mqretcode = mq_send(camera_queue, (char *)&msg, sizeof(msg), 0);
+	assert(mqretcode == 0);
+
+    }
+
+    return 1;
+
 
 }
 
@@ -297,6 +335,21 @@ int input()
         exit(1);
 
     }
+
+    /* open message queue */
+    watchdog_queue = mq_open("/watchdog_queue", O_RDWR);
+    assert(watchdog_queue != -1);
+    monitor_queue = mq_open("/monitor_queue", O_RDWR);
+    assert(monitor_queue != -1);
+    disk_queue = mq_open("/disk_queue", O_RDWR);
+    assert(disk_queue != -1);
+    camera_queue = mq_open("/camera_queue", O_RDWR);
+    assert(camera_queue != -1);
+
+
+
+
+
     /* create threads */
 
     if(pthread_create(&command_thread_tid, NULL, command_thread, "command_thread...\n") == -1) {

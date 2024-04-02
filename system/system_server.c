@@ -5,22 +5,32 @@
 #include <time.h>
 #include <pthread.h>
 #include <assert.h>
+#include <mqueue.h>
+#include <semaphore.h>
+
 
 #include <system_server.h>
 #include <gui.h>
 #include <input.h>
 #include <web_server.h>
 #include <camera_HAL.h>
+#include <toy_message.h>
 
+#define CAMERA_TAKE_PICTURE 1
 static int toy_timer = 0;
 pthread_mutex_t system_loop_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t system_loop_cond = PTHREAD_COND_INITIALIZER;
 bool	system_loop_exit = false;
 
+static mqd_t watchdog_queue;
+static mqd_t monitor_queue;
+static mqd_t disk_queue;
+static mqd_t camera_queue;
 
-
+void signal_exit(void);
 void sighandler_timer() {
     ++toy_timer;
+    signal_exit();
     time_t rawTime;
     struct tm* formattedTime;
     rawTime = time(NULL);
@@ -42,6 +52,19 @@ void sighandler_timer() {
 
 
 }
+void set_periodic_timer(long sec_delay, long usec_delay)
+{
+	struct itimerval itimer_val = {
+		.it_interval = {.tv_sec = sec_delay, .tv_usec = usec_delay},
+		.it_value = { .tv_sec = sec_delay, .tv_usec = usec_delay}
+	};
+
+	setitimer(ITIMER_REAL, &itimer_val, (struct itimerval*)0);
+
+
+
+}
+
 int posix_sleep_ms(unsigned int timeout_ms)
 {
     struct timespec sleep_time;
@@ -54,18 +77,35 @@ int posix_sleep_ms(unsigned int timeout_ms)
 
 
 void *watchdog_thread (void * arg) {
+    char *s = arg;
+    int mqretcode;
+    toy_msg_t msg;
+
     printf("watchdog_thread...\n");
+    printf("%s",s);
+
     while(1) {
-        posix_sleep_ms(1000);
+	mqretcode = (int)mq_receive(watchdog_queue, (void *)&msg, sizeof(toy_msg_t), 0);
+
+	assert(mqretcode >= 0);
+	printf("watchdog_thread: message arrived");
+	printf("msg.type: %d\n", msg.msg_type);
+	printf("msg.param1: %d\n", msg.param1);
+	printf("msg.param2: %d\n", msg.param2);
     }
+
+    return 0;
 
 }
 
-void *disk_service_thread (void * arg) {
+void *disk_service_thread(void * arg) {
     char *s = arg;
     FILE* apipe;
     char buf[1024];
     char cmd[] = "df -h ./";
+    int mqretcode;
+    toy_msg_t msg;
+
 
     printf("%s",s);
     /*
@@ -79,34 +119,69 @@ void *disk_service_thread (void * arg) {
 
     printf("disk_service_thread...\n");
     while(1) {
+
+	mqretcode = (int)mq_receive(disk_queue, (void *)&msg, sizeof(toy_msg_t), 0);
+	assert(mqretcode >= 0);
+	printf("disk_service_thread: message arrived");
+	printf("msg.type: %d\n", msg.msg_type);
+	printf("msg.param1: %d\n", msg.param1);
+	printf("msg.param2: %d\n", msg.param2);
+
+
         apipe = popen(cmd, "r");
 	while( fgets(buf, 1024, apipe) ) {
 		printf("%s",buf);
 	}
 	pclose(apipe);
-	posix_sleep_ms(10000);
+
     }
 
 }
 
 void *monitor_thread (void * arg) {
+
+    char *s = arg;
+    int mqretcode;
+    toy_msg_t msg;
+
     printf("monitor_thread...\n");
+
+    printf("%s", s);
+
     while(1) {
-        posix_sleep_ms(1000);
+        mqretcode = (int)mq_receive(monitor_queue, (void *)&msg, sizeof(toy_msg_t), 0);
+	assert(mqretcode >= 0);
+	printf("monitor_thread: message arrived\n");
+	printf("msg.type: %d\n", msg.msg_type);
+	printf("msg.param1: %d\n", msg.param1);
+	printf("msg.param2: %d\n", msg.param2);
+
     }
+    return 0;
 
 }
-void *camera_sevice_thread (void * arg) {
+void *camera_service_thread (void * arg) {
     char *s = arg;
+    int mqretcode;
+    toy_msg_t msg;
+
     printf("camera_service_thread...\n");
     printf("%s",s);
 
     toy_camera_open();
-    toy_camera_take_picture();
-
     while(1) {
-        posix_sleep_ms(1000);
+	mqretcode = (int)mq_receive(camera_queue, (void *)&msg, sizeof(toy_msg_t), 0);
+	assert(mqretcode >= 0);
+	printf("camera_service_thread: message arrived");
+	printf("msg.type: %d\n", msg.msg_type);
+	printf("msg.param1: %d\n", msg.param1);
+	if(msg.msg_type == CAMERA_TAKE_PICTURE) {
+	    toy_camera_take_picture();
+	}
+
+
     }
+    return 0;
 
 }
 
@@ -128,6 +203,8 @@ int system_server()
     struct sigaction  sa;
     struct sigevent   sev;
     timer_t *tidlist;
+    int retcode;
+
 
     pthread_t watchdog_thread_tid;
     pthread_t monitor_thread_tid;
@@ -145,10 +222,6 @@ int system_server()
     sa.sa_flags = 0;
     sa.sa_handler = sighandler_timer;
 
-    ts.it_value.tv_sec = 10;
-    ts.it_value.tv_nsec = 0;
-    ts.it_interval.tv_sec = 10;
-    ts.it_interval.tv_nsec = 0;
 
     if(sigaction(SIGALRM, &sa, NULL) == -1) {
 
@@ -157,12 +230,20 @@ int system_server()
 
     }
 
-    if(setitimer(ITIMER_REAL, &ts, NULL) == -1) {
+    /* init timer */
+    set_periodic_timer(10, 0);
 
-        fprintf(stderr,"set timer error");
-        exit(-1);
 
-    }
+    /* open message queue */
+
+    watchdog_queue = mq_open("/watchdog_queue",O_RDWR);
+    assert(watchdog_queue != -1);
+    monitor_queue = mq_open("/monitor_queue", O_RDWR);
+    assert(monitor_queue != -1);
+    disk_queue = mq_open("/disk_queue", O_RDWR);
+    assert(disk_queue != -1);
+    camera_queue = mq_open("/camera_queue", O_RDWR);
+    assert(camera_queue != -1);
 
     if(pthread_create(&watchdog_thread_tid, NULL, watchdog_thread, NULL) == -1) {
         fprintf(stderr,"pthread_create - watchdog");
@@ -173,7 +254,7 @@ int system_server()
     if(pthread_create(&monitor_thread_tid, NULL, monitor_thread, NULL) == -1) {
         fprintf(stderr,"pthread_create - monitor");
     }
-    if(pthread_create(&camera_service_thread_tid, NULL, camera_sevice_thread, NULL) == -1) {
+    if(pthread_create(&camera_service_thread_tid, NULL, camera_service_thread, NULL) == -1) {
         fprintf(stderr,"pthread_create - camera_service");
     }
 
