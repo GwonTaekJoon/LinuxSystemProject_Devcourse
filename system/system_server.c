@@ -27,10 +27,17 @@ static mqd_t monitor_queue;
 static mqd_t disk_queue;
 static mqd_t camera_queue;
 
+static pthread_mutex_t toy_timer_mutex = PTHREAD_MUTEX_INITIALIZER;
+static sem_t global_timer_sem;
+static bool global_timer_stopped;
+
 void signal_exit(void);
 void sighandler_timer() {
+
+    pthread_mutex_lock(&toy_timer_mutex);
     ++toy_timer;
-    signal_exit();
+    pthread_mutex_unlock(&toy_timer_mutex);
+    //signal_exit();
     time_t rawTime;
     struct tm* formattedTime;
     rawTime = time(NULL);
@@ -185,6 +192,54 @@ void *camera_service_thread (void * arg) {
 
 }
 
+static void timer_expire_signal_handler()
+{
+
+	// In signal context, use async-signal-safe function
+	//sem_post is async_signal_safe function
+
+    sem_post(&global_timer_sem);
+}
+
+static void *timer_thread(void *not_used)
+{
+
+
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sigaction));
+    sigemptyset(&sa.sa_mask);
+    //safe init
+
+    sa.sa_flags = 0;
+    sa.sa_handler = timer_expire_signal_handler;
+
+    if(sigaction(SIGALRM, &sa, NULL) == -1) {
+
+        fprintf(stderr, "timer signal init error");
+
+    }
+
+    /* init timer */
+    set_periodic_timer(1, 1);
+
+
+    while(!global_timer_stopped) {
+
+	int rc = sem_wait(&global_timer_sem);
+	if(rc == -1 && errno == EINTR) {
+		continue;
+	}
+	if(rc == -1) {
+		perror("sem_wait");
+		exit(-1);
+	}
+
+	sighandler_timer();
+    }
+
+    return 0;
+}
+
 
 void signal_exit(void) {
 
@@ -199,39 +254,11 @@ void signal_exit(void) {
 int system_server()
 {
 
-    struct itimerspec ts;
-    struct sigaction  sa;
-    struct sigevent   sev;
-    timer_t *tidlist;
-    int retcode;
-
-
     pthread_t watchdog_thread_tid;
     pthread_t monitor_thread_tid;
     pthread_t disk_service_thread_tid;
     pthread_t camera_service_thread_tid;
-
-
-
-
-
-    memset(&sa, 0, sizeof(sigaction));
-    sigemptyset(&sa.sa_mask);
-    //safe init
-
-    sa.sa_flags = 0;
-    sa.sa_handler = sighandler_timer;
-
-
-    if(sigaction(SIGALRM, &sa, NULL) == -1) {
-
-        fprintf(stderr, "timer signal init error");
-
-
-    }
-
-    /* init timer */
-    set_periodic_timer(10, 0);
+    pthread_t timer_thread_tid;
 
 
     /* open message queue */
@@ -246,23 +273,26 @@ int system_server()
     assert(camera_queue != -1);
 
     if(pthread_create(&watchdog_thread_tid, NULL, watchdog_thread, NULL) == -1) {
-        fprintf(stderr,"pthread_create - watchdog");
+        fprintf(stderr,"pthread_create - watchdog\n");
     }
     if(pthread_create(&disk_service_thread_tid, NULL, disk_service_thread, NULL) == -1) {
-        fprintf(stderr,"pthread_create - disk_service");
+        fprintf(stderr,"pthread_create - disk_service\n");
     }
     if(pthread_create(&monitor_thread_tid, NULL, monitor_thread, NULL) == -1) {
-        fprintf(stderr,"pthread_create - monitor");
+        fprintf(stderr,"pthread_create - monitor\n");
     }
     if(pthread_create(&camera_service_thread_tid, NULL, camera_service_thread, NULL) == -1) {
-        fprintf(stderr,"pthread_create - camera_service");
+        fprintf(stderr,"pthread_create - camera_service\n");
+    }
+    if(pthread_create(&timer_thread_tid, NULL, timer_thread, NULL) == -1) {
+	fprintf(stderr, "pthread_create - timer_thread\n");
     }
 
     pthread_detach(watchdog_thread_tid);
     pthread_detach(disk_service_thread_tid);
     pthread_detach(monitor_thread_tid);
     pthread_detach(camera_service_thread_tid);
-
+    pthread_detach(timer_thread_tid);
 
 
    printf("system init done. waiting...\n");
@@ -282,7 +312,10 @@ int system_server()
 
    printf("<==== system\n");
 
+   while(1) {
+	sleep(1);
 
+   }
 
 
     return 0;
