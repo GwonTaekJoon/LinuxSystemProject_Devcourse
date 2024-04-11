@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <mqueue.h>
 #include <toy_message.h>
+#include <shared_memory.h>
 
 #define TOY_TOK_BUFSIZE 64
 #define TOY_TOK_DELIM "\t\r\n\a"
@@ -38,6 +39,8 @@ static mqd_t watchdog_queue;
 static mqd_t monitor_queue;
 static mqd_t disk_queue;
 static mqd_t camera_queue;
+
+static shm_sensor_t *the_sensor_info = NULL;
 
 
 void segfault_handler(int sig_num, siginfo_t * info, void * ucontext) {
@@ -81,24 +84,37 @@ void segfault_handler(int sig_num, siginfo_t * info, void * ucontext) {
 void *sensor_thread(void* arg)
 {
 
-    char saved_message[TOY_BUFFSIZE];
+    int mqretcode;
     char *s = arg;
-    int i = 0;
+    toy_msg_t msg;
+    int shmid = toy_shm_get_keyid(SHM_KEY_SENSOR);
 
-    printf("%s", s);
+    printf("%s",s);
 
-    while (1) {
-	i = 0;
-	//require mutex
-	while(global_message[i] != NULL) {
-		printf("%c", global_message[i]);
-		fflush(stdout);
-		posix_sleep_ms(500);
-		++i;
+    while(1) {
+
+	posix_sleep_ms(5000);
+
+	/*save current sensor information on system V shared memory
+	send messages to monitor thread
+	 */
+
+	if(the_sensor_info != NULL) {
+
+		/*before attaching real sensor, hard coding*/
+	    the_sensor_info -> temp = 35;
+	    the_sensor_info -> press = 55;
+	    the_sensor_info -> humidity = 80;
+
 	}
-        posix_sleep_ms(5000);
-    }
 
+	msg.msg_type = 1;
+	msg.param1 = shmid;
+	msg.param2 = 0;
+	mqretcode = mq_send(monitor_queue, (char *)&msg, sizeof(msg), 0);
+	assert(mqretcode == 0);
+
+    }
     return 0;
 }
 
@@ -335,6 +351,21 @@ int input()
         exit(1);
 
     }
+
+	/* for sharing sensor data, create system V shared memory */
+    the_sensor_info = (shm_sensor_t *)toy_shm_create(SHM_KEY_SENSOR,\
+sizeof(shm_sensor_t));
+    if(the_sensor_info == (void *) -1) {
+
+	    the_sensor_info = NULL;
+	    printf("Error in shm_create SHMID = %d SHM_KEY_SENSOR\n", \
+			    SHM_KEY_SENSOR);
+
+
+    }
+
+
+
 
     /* open message queue */
     watchdog_queue = mq_open("/watchdog_queue", O_RDWR);

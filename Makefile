@@ -5,7 +5,8 @@ CFLAGS = -Wall -g -Iui -Iweb_server -Isystem -Ihal -I./
 CXXFLAGS = $(CFLAGS) -std=c++14
 CXXLIBS = -lpthread -lm -lrt
 # Source files and Object files
-CSRC = main.c ui/gui.c ui/input.c web_server/web_server.c system/system_server.c
+CSRC = main.c ui/gui.c ui/input.c web_server/web_server.c\
+system/system_server.c system/shared_memory.c
 CXXSRC = hal/camera_HAL.cpp hal/ControlThread.cpp
 COBJ = $(CSRC:.c=.o)
 CXXOBJ = $(CXXSRC:.cpp=.o)
