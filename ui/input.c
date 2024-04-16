@@ -18,6 +18,8 @@
 #include <mqueue.h>
 #include <toy_message.h>
 #include <shared_memory.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 #define TOY_TOK_BUFSIZE 64
 #define TOY_TOK_DELIM "\t\r\n\a"
@@ -127,14 +129,15 @@ int toy_shell(char **args);
 int toy_exit(char **args);
 int toy_mutex(char **args);
 int toy_message_queue(char **args);
-
+int toy_read_elf_header(char **args);
 
 char *builtin_str[] = {
     "send",
     "sh",
     "exit",
     "mu",
-    "mq"
+    "mq",
+    "elf"
 };
 
 int (*builtin_func[]) (char **) = {
@@ -142,7 +145,8 @@ int (*builtin_func[]) (char **) = {
     &toy_shell,
     &toy_exit,
     &toy_mutex,
-    &toy_message_queue
+    &toy_message_queue,
+    &toy_read_elf_header
 };
 
 int toy_num_builtins()
@@ -200,6 +204,46 @@ int toy_message_queue(char **args)
 
 }
 
+int toy_read_elf_header(char **args)
+{
+
+    int mqretcode;
+    toy_msg_t msg;
+    int in_fd;
+    char *contents = NULL;
+    size_t contents_sz;
+    struct stat st;
+    Elf64Hdr *map;
+
+    in_fd = open("./sample/sample.elf", O_RDONLY);
+    if(in_fd < 0) {
+	perror("cannot open ./sample/sample.elf");
+	return EXIT_FAILURE;
+    }
+
+    if(fstat(in_fd, &st) == -1) {
+	perror("fstat error");
+	close(in_fd);
+	return EXIT_FAILURE;
+    }
+
+    contents_sz = st.st_size;
+    if(contents_sz == 0) {
+	printf("./sample/sample.elf is empty\n");
+	return 1;
+    }
+    printf("real size: %ld", contents_sz);
+        map = (Elf64Hdr *)mmap(NULL, contents_sz, PROT_READ,\
+			MAP_PRIVATE, in_fd, 0);
+    printf("Object file type : %d", map->e_type);
+    printf("Architecture : %d", map->e_machine);
+    printf("Object file version : %d", map->e_version);
+    printf("Entry point virtual address : %ld", map->e_entry);
+    printf("Program header table file offset : %ld", map->e_phoff);
+    munmap(map, contents_sz);
+    close(in_fd);
+    return 1;
+}
 int toy_exit(char **args)
 {
     return 0;
