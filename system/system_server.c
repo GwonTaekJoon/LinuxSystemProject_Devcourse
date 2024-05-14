@@ -17,10 +17,22 @@
 #include <toy_message.h>
 #include <shared_memory.h>
 
+#include <sys/inotify.h>
+#include <limits.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <sys/sysmacros.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <stdint.h>
+#include <string.h>
+#include <dirent.h>
 
 
 #define CAMERA_TAKE_PICTURE 1
 #define SENSOR_DATA 1
+#define TOY_TEST_FS "./fs/"
+#define BUF_LEN 1024
 
 static int toy_timer = 0;
 pthread_mutex_t system_loop_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -112,13 +124,65 @@ void *watchdog_thread (void * arg) {
 
 }
 
+static long get_directory_size(char *dirname)
+{
+    DIR *dir = opendir(dirname);
+
+    struct dirent *dit;
+    struct stat st;
+    long size = 0;
+    long total_size = 0;
+    char filePath[1024];
+    long dir_size = 0;
+
+
+    if(dir == 0) {
+	perror("opening dir error");
+	return 0;
+
+    }
+
+    while((dit = readdir(dir)) != NULL) {
+
+	if(strcmp(dit -> d_name, ".") == 0 || strcmp(dit -> d_name, "..") == 0)
+		continue;
+
+
+	sprintf(filePath, "%s/%s", dirname, dit -> d_name);
+	if(lstat(filePath, &st) != 0)
+		continue;
+	size = st.st_size;
+
+	if(S_ISDIR(st.st_mode) != 0) {
+
+	    dir_size = get_directory_size(filePath);
+	    total_size += dir_size;
+
+	} else {
+		total_size += size;
+	}
+
+    }
+
+    return total_size;
+
+}
+
 void *disk_service_thread(void * arg) {
     char *s = arg;
-    FILE* apipe;
-    char buf[1024];
-    char cmd[] = "df -h ./";
-    int mqretcode;
-    toy_msg_t msg;
+    //FILE* apipe;
+    char buf[1024] __attribute__ ((aligned(8)));
+
+    //char cmd[] = "df -h ./";
+    //int mqretcode;
+    //toy_msg_t msg;
+    int inotifyFd;
+    int wd;
+    ssize_t numRead;
+    char *p;
+    struct inotify_event *event;
+    char *directory = TOY_TEST_FS;
+    int total_size;
 
 
     printf("%s",s);
@@ -132,6 +196,48 @@ void *disk_service_thread(void * arg) {
 
 
     printf("disk_service_thread...\n");
+    inotifyFd = inotify_init();
+    if(inotifyFd == -1){
+
+        perror("initing inotify_FD error");
+	return 0;
+
+    }
+    wd = inotify_add_watch(inotifyFd, TOY_TEST_FS, IN_CREATE);
+    if(wd == -1) {
+        perror("watching inotify error");
+	return 0;
+
+    }
+
+
+    while(1) {
+	numRead = read(inotifyFd, buf, BUF_LEN);
+	if(numRead == 0) {
+
+		perror("reading inotifyFd error = 0");
+		return 0;
+
+	}
+	if(numRead == -1) {
+		perror("reading inotifyFd error = -1");
+	return 0;
+	}
+
+	for(p = buf; p < buf + numRead; ) {
+		event = (struct inotify_event *)p;
+		p += sizeof(struct inotify_event) + event -> len;
+
+	}
+	total_size = get_directory_size(TOY_TEST_FS);
+	printf("directory size : %d\n", total_size);
+
+
+    }
+
+    return 0;
+
+    /*
     while(1) {
 
 	mqretcode = (int)mq_receive(disk_queue, (void *)&msg, sizeof(toy_msg_t), 0);
@@ -148,7 +254,7 @@ void *disk_service_thread(void * arg) {
 	}
 	pclose(apipe);
 
-    }
+    }*/
 
 }
 
