@@ -31,3 +31,13 @@ int ControlThread::takePicture()
 	cout << "c++ takePicture()" << endl;
 	return 0;
 }
+
+
+int ControlThread::dump()
+{
+
+    cout << "C++ connection : camera dump" << endl;
+
+    return 0;
+
+}

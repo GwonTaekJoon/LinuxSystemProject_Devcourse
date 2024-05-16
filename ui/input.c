@@ -24,6 +24,8 @@
 #define TOY_TOK_BUFSIZE 64
 #define TOY_TOK_DELIM "\t\r\n\a"
 #define TOY_BUFFSIZE 1024
+
+#define DUMP_STATE 2
 typedef struct _sig_ucontext {
     unsigned long uc_flags;
     struct ucontext *uc_link;
@@ -130,6 +132,7 @@ int toy_exit(char **args);
 int toy_mutex(char **args);
 int toy_message_queue(char **args);
 int toy_read_elf_header(char **args);
+int toy_dump_state(char **args);
 
 char *builtin_str[] = {
     "send",
@@ -137,7 +140,8 @@ char *builtin_str[] = {
     "exit",
     "mu",
     "mq",
-    "elf"
+    "elf",
+    "dump"
 };
 
 int (*builtin_func[]) (char **) = {
@@ -146,7 +150,8 @@ int (*builtin_func[]) (char **) = {
     &toy_exit,
     &toy_mutex,
     &toy_message_queue,
-    &toy_read_elf_header
+    &toy_read_elf_header,
+    &toy_dump_state
 };
 
 int toy_num_builtins()
@@ -356,6 +361,27 @@ void toy_loop(void)
     } while (status);
 }
 
+int toy_dump_state(char **args)
+{
+
+    int mqretcode;
+    toy_msg_t msg;
+
+    msg.msg_type = DUMP_STATE;
+    msg.param1 = 0;
+    msg.param2 = 0;
+
+    mqretcode = mq_send(camera_queue, (char *)&msg, sizeof(msg), 0);
+    assert(mqretcode == 0);
+
+
+    mqretcode = mq_send(monitor_queue, (char *)&msg, sizeof(msg), 0);
+    assert(mqretcode == 0);
+
+    return 1;
+
+
+}
 void *command_thread(void* arg)
 {
     char *s = arg;

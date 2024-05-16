@@ -34,6 +34,8 @@
 #define TOY_TEST_FS "./fs/"
 #define BUF_LEN 1024
 
+#define DUMP_STATE 2
+
 static int toy_timer = 0;
 pthread_mutex_t system_loop_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t system_loop_cond = PTHREAD_COND_INITIALIZER;
@@ -281,19 +283,24 @@ void *monitor_thread(void * arg) {
 
 
 
-    if(msg.msg_type == SENSOR_DATA) {
-	shmid = msg.param1;
-	the_sensor_info = toy_shm_attach(shmid);
-	printf("sensor temp : %d\n", the_sensor_info -> temp);
-	printf("sensor press : %d\n", the_sensor_info -> press);
-	printf("sensor humidity : %d\n", the_sensor_info -> humidity);
-	toy_shm_detach(the_sensor_info);
+        if(msg.msg_type == SENSOR_DATA) {
+	    shmid = msg.param1;
+	    the_sensor_info = toy_shm_attach(shmid);
+	    printf("sensor temp : %d\n", the_sensor_info -> temp);
+	    printf("sensor press : %d\n", the_sensor_info -> press);
+	    printf("sensor humidity : %d\n", the_sensor_info -> humidity);
+	    toy_shm_detach(the_sensor_info);
+        } else if(msg.msg_type == DUMP_STATE) {
+		dump_state();
+	} else {
+		printf("monitor_thread: unknown message ... \n");
 	}
     }
     return 0;
 
 }
 void *camera_service_thread (void * arg) {
+
     char *s = arg;
     int mqretcode;
     toy_msg_t msg;
@@ -308,8 +315,14 @@ void *camera_service_thread (void * arg) {
 	printf("camera_service_thread: message arrived");
 	printf("msg.type: %d\n", msg.msg_type);
 	printf("msg.param1: %d\n", msg.param1);
+	printf("msg.param2: %d\n", msg.param2);
+
 	if(msg.msg_type == CAMERA_TAKE_PICTURE) {
 	    toy_camera_take_picture();
+	} else if(msg.msg_type == DUMP_STATE) {
+		toy_camera_dump();
+	} else {
+		printf("camera_service_thrad: unknown message ...\n");
 	}
 
 

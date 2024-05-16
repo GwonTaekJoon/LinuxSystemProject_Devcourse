@@ -9,6 +9,7 @@ class ControlThread {
 
 	public:
 		int takePicture();
+		int dump();
 
 	private:
 
