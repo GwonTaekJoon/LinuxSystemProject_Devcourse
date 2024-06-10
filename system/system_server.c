@@ -13,7 +13,8 @@
 #include <gui.h>
 #include <input.h>
 #include <web_server.h>
-#include <camera_HAL.h>
+//#include <camera_HAL.h> removing for shared libraries
+
 #include <toy_message.h>
 #include <shared_memory.h>
 
@@ -27,7 +28,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <dirent.h>
-
+#include <dump_state.h>
+#include <hardware.h>
 
 #define CAMERA_TAKE_PICTURE 1
 #define SENSOR_DATA 1
@@ -304,11 +306,23 @@ void *camera_service_thread (void * arg) {
     char *s = arg;
     int mqretcode;
     toy_msg_t msg;
+    hw_module_t *module = NULL;
+    int ret;
 
     printf("camera_service_thread...\n");
     printf("%s",s);
 
-    toy_camera_open();
+
+    ret = hw_get_camera_module((const hw_module_t **)&module);
+    assert(ret == 0);
+
+    module -> take_picture(); /*test before receiving signal*/
+    printf("Camera module name: %s\n", module -> name);
+    printf("Camera module tag: %d\n", module -> tag);
+    printf("Camera module id: %s\n", module -> id);
+    module -> open();
+
+    //toy_camera_open();
     while(1) {
 	mqretcode = (int)mq_receive(camera_queue, (void *)&msg, sizeof(toy_msg_t), 0);
 	assert(mqretcode >= 0);
@@ -317,10 +331,13 @@ void *camera_service_thread (void * arg) {
 	printf("msg.param1: %d\n", msg.param1);
 	printf("msg.param2: %d\n", msg.param2);
 
+
 	if(msg.msg_type == CAMERA_TAKE_PICTURE) {
-	    toy_camera_take_picture();
+	    //toy_camera_take_picture();
+	    module -> take_picture();
 	} else if(msg.msg_type == DUMP_STATE) {
-		toy_camera_dump();
+		//toy_camera_dump();
+		module -> dump();
 	} else {
 		printf("camera_service_thrad: unknown message ...\n");
 	}

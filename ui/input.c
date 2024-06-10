@@ -20,12 +20,15 @@
 #include <shared_memory.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <dump_state.h>
 
 #define TOY_TOK_BUFSIZE 64
-#define TOY_TOK_DELIM "\t\r\n\a"
+#define TOY_TOK_DELIM " \t\r\n\a"
 #define TOY_BUFFSIZE 1024
 
 #define DUMP_STATE 2
+
+
 typedef struct _sig_ucontext {
     unsigned long uc_flags;
     struct ucontext *uc_link;
@@ -462,8 +465,8 @@ sizeof(shm_sensor_t));
     }
 
 
-    pthread_detach(command_thread_tid);
-    pthread_detach(sensor_thread_tid);
+    //pthread_detach(command_thread_tid);
+    //pthread_detach(sensor_thread_tid);
 
 
 
