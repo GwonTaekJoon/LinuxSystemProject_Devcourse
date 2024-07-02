@@ -21,6 +21,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <dump_state.h>
+#include <seccomp.h>
 
 #define TOY_TOK_BUFSIZE 64
 #define TOY_TOK_DELIM " \t\r\n\a"
@@ -136,6 +137,7 @@ int toy_mutex(char **args);
 int toy_message_queue(char **args);
 int toy_read_elf_header(char **args);
 int toy_dump_state(char **args);
+int toy_mincore(char **args);
 
 char *builtin_str[] = {
     "send",
@@ -144,7 +146,8 @@ char *builtin_str[] = {
     "mu",
     "mq",
     "elf",
-    "dump"
+    "dump",
+    "mincore"
 };
 
 int (*builtin_func[]) (char **) = {
@@ -154,7 +157,8 @@ int (*builtin_func[]) (char **) = {
     &toy_mutex,
     &toy_message_queue,
     &toy_read_elf_header,
-    &toy_dump_state
+    &toy_dump_state,
+    &toy_mincore
 };
 
 int toy_num_builtins()
@@ -251,6 +255,21 @@ int toy_read_elf_header(char **args)
     munmap(map, contents_sz);
     close(in_fd);
     return 1;
+}
+int toy_mincore(char **args)
+{
+
+    unsigned char vec[20];
+    int res;
+    size_t page = sysconf(_SC_PAGESIZE);
+    void *addr = mmap(NULL, 20 * page, PROT_READ | PROT_WRITE, \
+		    MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+    res = mincore(addr, 10 * page, vec);
+    assert(res == 0);
+
+    return 1;
+
+
 }
 int toy_exit(char **args)
 {
@@ -424,6 +443,47 @@ int input()
         exit(1);
 
     }
+
+    scmp_filter_ctx ctx;
+    ctx = seccomp_init(SCMP_ACT_ALLOW);
+    if(ctx == NULL) {
+        printf("seccomp_init failed");
+	return -1;
+    }
+
+    /* Invoking a "mincore" system call induces an error */
+    int rc = seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(mincore), 0);
+    if(rc < 0) {
+        printf("seccomp_rule_add failed");
+	return -1;
+
+    }
+
+    /* creating filter log*/
+    seccomp_export_pfc(ctx, 5);
+    seccomp_export_bpf(ctx, 6);
+
+
+    rc = seccomp_load(ctx);
+
+    if(rc < 0) {
+        printf("seccomp_load failed");
+	return -1;
+    }
+
+    /*seccomp filter drive*/
+    seccomp_release(ctx);
+
+
+
+
+
+
+
+
+
+
+
 
 	/* for sharing sensor data, create system V shared memory */
     the_sensor_info = (shm_sensor_t *)toy_shm_create(SHM_KEY_SENSOR,\
