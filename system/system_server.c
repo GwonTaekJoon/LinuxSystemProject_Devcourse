@@ -47,6 +47,7 @@ static mqd_t watchdog_queue;
 static mqd_t monitor_queue;
 static mqd_t disk_queue;
 static mqd_t camera_queue;
+static mqd_t engine_queue;
 
 static pthread_mutex_t toy_timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static sem_t global_timer_sem;
@@ -110,8 +111,7 @@ void *watchdog_thread (void * arg) {
     char *s = arg;
     int mqretcode;
     toy_msg_t msg;
-
-    printf("watchdog_thread...\n");
+    
     printf("%s",s);
 
     while(1) {
@@ -198,8 +198,6 @@ void *disk_service_thread(void * arg) {
 
      */
 
-
-    printf("disk_service_thread...\n");
     inotifyFd = inotify_init();
     if(inotifyFd == -1){
 
@@ -270,8 +268,6 @@ void *monitor_thread(void * arg) {
 
     int shmid;
 
-    printf("monitor_thread...\n");
-
     printf("%s", s);
 
     while(1) {
@@ -309,7 +305,6 @@ void *camera_service_thread (void * arg) {
     hw_module_t *module = NULL;
     int ret;
 
-    printf("camera_service_thread...\n");
     printf("%s",s);
 
 
@@ -397,6 +392,30 @@ static void *timer_thread(void *not_used)
 }
 
 
+void *engine_thread(void *arg)
+{
+    char *s = arg;
+    int mqretcode;
+    toy_msg_t msg;
+    int res;
+
+    printf("%s", s);
+
+    while(1) {
+        mqretcode = (int)mq_receive(engine_queue, (void *)&msg, sizeof(toy_msg_t), 0);
+        assert(mqretcode >= 0);
+        printf("engine_service_thread: message arrived");
+        printf("msg.type: %d\n", msg.msg_type);
+        printf("msg.param1: %d\n", msg.param1);
+        printf("msg.param2: %d\n", msg.param2);
+
+    }
+
+    return 0;
+
+}
+
+
 void signal_exit(void) {
 
 	pthread_mutex_lock(&system_loop_mutex);
@@ -415,7 +434,14 @@ int system_server()
     pthread_t disk_service_thread_tid;
     pthread_t camera_service_thread_tid;
     pthread_t timer_thread_tid;
+    
+    //real-time
+    pthread_t engine_thread_tid;
+    pthread_attr_t attr;
+    struct sched_param sched_param;
+    char short_thread_name[] = "un-named";
 
+    int retcode;
 
     /* open message queue */
 
@@ -427,22 +453,41 @@ int system_server()
     assert(disk_queue != -1);
     camera_queue = mq_open("/camera_queue", O_RDWR);
     assert(camera_queue != -1);
+    engine_queue = mq_open("/engine_queue", O_RDWR);
+    assert(engine_queue != -1);
 
-    if(pthread_create(&watchdog_thread_tid, NULL, watchdog_thread, NULL) == -1) {
+    if(pthread_create(&watchdog_thread_tid, NULL, watchdog_thread, "watchdog thread\n") == -1) {
         fprintf(stderr,"pthread_create - watchdog\n");
     }
-    if(pthread_create(&disk_service_thread_tid, NULL, disk_service_thread, NULL) == -1) {
+    if(pthread_create(&disk_service_thread_tid, NULL, disk_service_thread, "disk service thread\n") == -1) {
         fprintf(stderr,"pthread_create - disk_service\n");
     }
-    if(pthread_create(&monitor_thread_tid, NULL, monitor_thread, NULL) == -1) {
+    if(pthread_create(&monitor_thread_tid, NULL, monitor_thread, "monitor_thread\n") == -1) {
         fprintf(stderr,"pthread_create - monitor\n");
     }
-    if(pthread_create(&camera_service_thread_tid, NULL, camera_service_thread, NULL) == -1) {
+    if(pthread_create(&camera_service_thread_tid, NULL, camera_service_thread, "camera thread\n") == -1) {
         fprintf(stderr,"pthread_create - camera_service\n");
     }
-    if(pthread_create(&timer_thread_tid, NULL, timer_thread, NULL) == -1) {
+    if(pthread_create(&timer_thread_tid, NULL, timer_thread, "timer_thread") == -1) {
 	fprintf(stderr, "pthread_create - timer_thread\n");
     }
+
+
+    /* engine thread - real-time class */
+    retcode = pthread_attr_init(&attr);
+    assert(retcode == 0);
+    retcode = pthread_attr_setschedpolicy(&attr, SCHED_RR);
+    assert(retcode == 0);
+    retcode = pthread_attr_getschedparam(&attr, &sched_param);
+    assert(retcode == 0);
+    sched_param.sched_priority = 50;
+    retcode = pthread_attr_setschedparam(&attr, &sched_param);
+    assert(retcode == 0);
+    retcode = pthread_create(&engine_thread_tid, &attr, engine_thread, "engine_thread\n");
+    assert(retcode == 0);
+
+
+    
 
     pthread_detach(watchdog_thread_tid);
     pthread_detach(disk_service_thread_tid);
