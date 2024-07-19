@@ -1,6 +1,9 @@
 # Compiler and Compiler Flags
-CC = gcc
-CXX = g++
+
+BUILDROOT_DIR = /home/gwontaekjoon/Desktop/buildroot
+TOOLCHAIN_DIR = $(BUILDROOT_DIR)/output/host/bin
+CC = $(TOOLCHAIN_DIR)/aarch64-buildroot-linux-gnu-gcc
+CXX = $(TOOLCHAIN_DIR)/aarch64-buildroot-linux-gnu-g++
 CFLAGS = -Wall -g -Iui -Iweb_server -Isystem -Ihal -I./ -fPIC
 CXXFLAGS = $(CFLAGS) -std=c++14
 CXXLIBS = -lpthread -lm -lrt -ldl -lseccomp
