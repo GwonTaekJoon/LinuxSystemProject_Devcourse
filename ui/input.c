@@ -11,7 +11,6 @@
 #include <gui.h>
 #include <input.h>
 #include <web_server.h>
-#include <execinfo.h>
 #include <sys/wait.h>
 #include <pthread.h>
 #include <assert.h>
@@ -126,10 +125,6 @@ void *sensor_thread(void* arg)
     return 0;
 }
 
-/*
- *  command thread
- */
-
 int toy_send(char **args);
 int toy_shell(char **args);
 int toy_exit(char **args);
@@ -138,6 +133,7 @@ int toy_message_queue(char **args);
 int toy_read_elf_header(char **args);
 int toy_dump_state(char **args);
 int toy_mincore(char **args);
+int toy_simple_io(char **args);
 
 char *builtin_str[] = {
     "send",
@@ -147,7 +143,8 @@ char *builtin_str[] = {
     "mq",
     "elf",
     "dump",
-    "mincore"
+    "mincore",
+    "n"
 };
 
 int (*builtin_func[]) (char **) = {
@@ -158,7 +155,8 @@ int (*builtin_func[]) (char **) = {
     &toy_message_queue,
     &toy_read_elf_header,
     &toy_dump_state,
-    &toy_mincore
+    &toy_mincore,
+    &toy_simple_io
 };
 
 int toy_num_builtins()
@@ -199,7 +197,7 @@ int toy_message_queue(char **args)
     toy_msg_t msg;
 
     if(args[1] == NULL || args[2] == NULL) {
-	return 1;
+	    return 1;
     }
 
     if(!strcmp(args[1], "camera")) {
@@ -289,8 +287,7 @@ int toy_shell(char **args)
         exit(EXIT_FAILURE);
     } else if (pid < 0) {
         perror("toy");
-    } else
-{
+    } else {    
         do
         {
             waitpid(pid, &status, WUNTRACED);
@@ -404,6 +401,44 @@ int toy_dump_state(char **args)
 
 
 }
+
+int toy_simple_io(char **args) 
+{
+
+    int dev;
+    char buff = 2;
+    dev = open("/dev/toy_simple_io_driver", O_RDWR | O_NDELAY);
+
+    if(dev < 0) {
+        fprintf(stderr, "module open error");
+        return 1;    
+    }
+
+    if(args[1] != NULL && !strcmp(args[1], "exit")) {
+        buff = 2;
+        if(write(dev, &buff, 1) < 0) {
+            printf("write error\n");
+            goto err;
+        }
+    } else {
+        buff = 1;
+        if(write(dev, &buff, 1) < 0) {
+            printf("write error\n");
+            goto err;
+        }
+    }
+
+    
+
+err:
+    close(dev);
+
+
+    return 1;
+
+
+}
+
 void *command_thread(void* arg)
 {
     char *s = arg;
@@ -552,14 +587,14 @@ int create_input()
         break;
 
     case 0:
-        if(prctl(PR_SET_NAME, (unsigned long)processName, NULL, NULL, NULL) == 0){
+        if(prctl(PR_SET_NAME, (unsigned long)processName, NULL, NULL, NULL) < 0){
             /* man prctl -> int prctl(int option, unsinged long arg2, unsigned long arg2,
              unsigned long arg3, unsigned long arg4, unsigned long arg5)*/
-            input();
-            break;
+            perror("prctl()");
 
         }
-        perror("prctl()");
+        input();
+        break;
     default:
         break;
     }

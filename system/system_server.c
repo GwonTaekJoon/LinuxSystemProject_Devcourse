@@ -77,9 +77,11 @@ void sighandler_timer() {
     int min = formattedTime -> tm_min;
     int sec = formattedTime -> tm_sec;
 
+    /*
     printf("Current Time Info : %d year %d month %d day %d:%d:%d\ntimer_count : %d\n"
     ,year, month, day, hour, min, sec, toy_timer);
-
+    */
+   
 
 
 }

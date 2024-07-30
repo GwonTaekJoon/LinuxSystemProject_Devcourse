@@ -30,6 +30,7 @@ all: $(TARGET) libcamera.oem.so libcamera.toy.so
 # Rule to link object files to create the executable
 $(TARGET): $(OBJ)
 	$(CXX) -o $@ $(OBJ) $(CXXLIBS) $(LDFLAGS)
+	make modules
 
 # Rule to compile C source files into object files
 %.o: %.c
@@ -51,7 +52,12 @@ libcamera.toy.so: hal/toy/camera_HAL_toy.o hal/toy/ControlThread.o
 clean:
 	rm -f $(COBJ) $(CXXOBJ) $(TARGET) libcamera.oem.so libcamera.toy.so\
 		bin/filebrowser.db
+	make -C drivers/simple_io clean
 
 # Phony targets
 .PHONY: all clean libcamera.oem.so libcamera.toy.so
+
+.PHONY: modules
+modules:
+	cd drivers/simple_io && make
 

@@ -8,7 +8,7 @@
 #include <hardware.h>
 
 
-#define HAL_LIBRARY_PATH1 "../libcamera.so"
+#define HAL_LIBRARY_PATH1 "./libcamera.so"
 
 static int load(const struct hw_module_t **p_Hmi)
 {
