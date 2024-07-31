@@ -21,12 +21,16 @@
 #include <sys/stat.h>
 #include <dump_state.h>
 #include <seccomp.h>
+#include <sys/ioctl.h>
 
 #define TOY_TOK_BUFSIZE 64
 #define TOY_TOK_DELIM " \t\r\n\a"
 #define TOY_BUFFSIZE 1024
 
 #define DUMP_STATE 2
+
+#define MOTOR_1_SET_SPEED _IOW('w', '1', int32_t *)
+#define MOTOR_2_SET_SPEED _IOW('w', '2', int32_t *)
 
 
 typedef struct _sig_ucontext {
@@ -134,6 +138,8 @@ int toy_read_elf_header(char **args);
 int toy_dump_state(char **args);
 int toy_mincore(char **args);
 int toy_simple_io(char **args);
+int toy_set_motor_1_speed(char **args);
+int toy_set_motor_2_speed(char **args);
 
 char *builtin_str[] = {
     "send",
@@ -144,7 +150,9 @@ char *builtin_str[] = {
     "elf",
     "dump",
     "mincore",
-    "n"
+    "n",
+    "m1",
+    "m2"
 };
 
 int (*builtin_func[]) (char **) = {
@@ -156,7 +164,9 @@ int (*builtin_func[]) (char **) = {
     &toy_read_elf_header,
     &toy_dump_state,
     &toy_mincore,
-    &toy_simple_io
+    &toy_simple_io,
+    &toy_set_motor_1_speed,
+    &toy_set_motor_2_speed
 };
 
 int toy_num_builtins()
@@ -410,7 +420,7 @@ int toy_simple_io(char **args)
     dev = open("/dev/toy_simple_io_driver", O_RDWR | O_NDELAY);
 
     if(dev < 0) {
-        fprintf(stderr, "module open error");
+        fprintf(stderr, "module open error\n");
         return 1;    
     }
 
@@ -437,6 +447,73 @@ err:
     return 1;
 
 
+}
+
+int toy_set_motor_1_speed(char **args)
+{
+    int dev;
+    char buff = 2;
+    int speed;
+
+    if(args[1] == NULL) {
+        return 1;
+    }
+
+    speed = atoi(args[1]);
+
+    if(speed > 100) {
+        speed = 100;
+    }
+
+    dev = open("/dev/toy_engine_driver", O_RDWR | O_NDELAY);
+    if(dev < 0) {
+        fprintf(stderr, "module open error\n");
+        return 1;
+    }
+
+    if(ioctl(dev, MOTOR_1_SET_SPEED, &speed) < 0) {
+        printf("Error while ioctl READ_USE_COUNT (before) in main\n");
+        goto err;
+    }
+
+err:
+    close(dev);
+
+    return 1;
+}
+
+int toy_set_motor_2_speed(char **args)
+{
+    int dev;
+    char buff = 2;
+    int speed;
+
+    if(args[1] == NULL) {
+        return 1;
+    }
+
+    speed = atoi(args[1]);
+
+    if(speed > 100) {
+        speed = 100;
+    }
+
+    dev = open("/dev/toy_engine_driver", O_RDWR | O_NDELAY);
+
+    if(dev < 0) {
+        fprintf(stderr, "module open error\n");
+        return 1;
+    }
+
+    if(ioctl(dev, MOTOR_2_SET_SPEED, &speed) < 0) {
+        printf("Error while ioctl READ_USE_COUNT (before) in main\n");
+        goto err;
+    }
+
+err:
+    close(dev);
+
+    return 1;
 }
 
 void *command_thread(void* arg)
@@ -508,16 +585,6 @@ int input()
 
     /*seccomp filter drive*/
     seccomp_release(ctx);
-
-
-
-
-
-
-
-
-
-
 
 
 	/* for sharing sensor data, create system V shared memory */

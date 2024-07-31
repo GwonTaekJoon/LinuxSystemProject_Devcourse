@@ -53,6 +53,7 @@ clean:
 	rm -f $(COBJ) $(CXXOBJ) $(TARGET) libcamera.oem.so libcamera.toy.so\
 		bin/filebrowser.db
 	make -C drivers/simple_io clean
+	make -C drivers/engine clean
 
 # Phony targets
 .PHONY: all clean libcamera.oem.so libcamera.toy.so
@@ -60,4 +61,5 @@ clean:
 .PHONY: modules
 modules:
 	cd drivers/simple_io && make
+	cd drivers/engine && make
 
