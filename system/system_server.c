@@ -299,6 +299,19 @@ void *monitor_thread(void * arg) {
     return 0;
 
 }
+
+void toy_camera_notify_callback(int32_t msg_type, int32_t ext1, int32_t ext2)
+{
+    printf("camera_notify_callback: msg_type: %d, exit1: %d, ext2: %d \n", \
+    msg_type, ext1, ext2);
+}
+
+void toy_camera_data_callback(int32_t msg_type, const camera_data_t *data, \
+                             unsigned int index)
+{
+    printf("camera_data_callback: msg_type: %d, index: %d  \n", msg_type, index);
+}
+
 void *camera_service_thread (void * arg) {
 
     char *s = arg;
@@ -318,6 +331,7 @@ void *camera_service_thread (void * arg) {
     printf("Camera module tag: %d\n", module -> tag);
     printf("Camera module id: %s\n", module -> id);
     module -> open();
+    module -> set_callbacks(toy_camera_data_callback, toy_camera_data_callback);
 
     //toy_camera_open();
     while(1) {

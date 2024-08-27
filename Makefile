@@ -4,7 +4,7 @@ BUILDROOT_DIR = /home/gwontaekjoon/Desktop/buildroot
 TOOLCHAIN_DIR = $(BUILDROOT_DIR)/output/host/bin
 CC = $(TOOLCHAIN_DIR)/aarch64-buildroot-linux-gnu-gcc
 CXX = $(TOOLCHAIN_DIR)/aarch64-buildroot-linux-gnu-g++
-CFLAGS = -Wall -g -Iui -Iweb_server -Isystem -Ihal -I./ -fPIC
+CFLAGS = -Wall -g -Iui -Iweb_server -Isystem -Ihal -I./ -fPIC -Ihal/include
 CXXFLAGS = $(CFLAGS) -std=c++14
 CXXLIBS = -lpthread -lm -lrt -ldl -lseccomp
 LDFLAGS = -Wl,--no-as-needed
@@ -54,6 +54,7 @@ clean:
 		bin/filebrowser.db
 	make -C drivers/simple_io clean
 	make -C drivers/engine clean
+	make -C drivers/state_machine clean
 
 # Phony targets
 .PHONY: all clean libcamera.oem.so libcamera.toy.so
@@ -62,4 +63,5 @@ clean:
 modules:
 	cd drivers/simple_io && make
 	cd drivers/engine && make
+	cd drivers/state_machine && make
 

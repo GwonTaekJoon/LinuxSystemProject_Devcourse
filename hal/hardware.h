@@ -28,8 +28,22 @@
 
 #define CAMERA_HARDWARE_MODULE_ID "camera"
 
+/* callback Messages */
+enum {
+    CAMERA_MSG_ERROR = 0x0001,    //dataCallback
+    CAMERA_TAKE_PICTURE_DONE,     //notifyCallback
+};
 
+typedef struct camera_data {
+    void *data;
+    size_t size;
+    void *handle;
+} camera_data_t;
 
+typedef void (*camera_notify_callback)(int32_t msg_type, \
+                int32_t ext1, int32_t ext2);
+typedef void (*camera_data_callback)(int32_t msg_type, \
+                const camera_data_t *data, unsigned int index);
 typedef struct hw_module_t {
 
     uint32_t tag;
@@ -38,6 +52,7 @@ typedef struct hw_module_t {
     int (*open)();
     int (*take_picture)();
     int (*dump)();
+    int (*set_callbacks)(camera_notify_callback notify_cb, camera_data_callback data_cb);
     void* dso;
 
 } hw_module_t;
