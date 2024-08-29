@@ -22,16 +22,21 @@
 #include <dump_state.h>
 #include <seccomp.h>
 #include <sys/ioctl.h>
+#include <poll.h>
+#include <fcntl.h>
 
 #define TOY_TOK_BUFSIZE 64
 #define TOY_TOK_DELIM " \t\r\n\a"
 #define TOY_BUFFSIZE 1024
 
+#define SENSOR_DATA 1
 #define DUMP_STATE 2
 
 #define MOTOR_1_SET_SPEED _IOW('w', '1', int32_t *)
 #define MOTOR_2_SET_SPEED _IOW('w', '2', int32_t *)
 
+#define TOY_SYSFS_TRIGGER "/sys/toy/trigger"
+#define TOY_SYSFS_NOTIFY "/sys/toy/notify"
 
 typedef struct _sig_ucontext {
     unsigned long uc_flags;
@@ -94,38 +99,59 @@ void segfault_handler(int sig_num, siginfo_t * info, void * ucontext) {
  */
 void *sensor_thread(void* arg)
 {
-
     int mqretcode;
     char *s = arg;
     toy_msg_t msg;
     int shmid = toy_shm_get_keyid(SHM_KEY_SENSOR);
+    int notify_fd, rv;
+    char buff[100];
+    struct pollfd sensor_fd[1];
 
-    printf("%s",s);
+    printf("%s", s);
 
-    while(1) {
-
-	posix_sleep_ms(5000);
-
-	/*save current sensor information on system V shared memory
-	send messages to monitor thread
-	 */
-
-	if(the_sensor_info != NULL) {
-
-		/*before attaching real sensor, hard coding*/
-	    the_sensor_info -> temp = 35;
-	    the_sensor_info -> press = 55;
-	    the_sensor_info -> humidity = 80;
-
-	}
-
-	msg.msg_type = 1;
-	msg.param1 = shmid;
-	msg.param2 = 0;
-	mqretcode = mq_send(monitor_queue, (char *)&msg, sizeof(msg), 0);
-	assert(mqretcode == 0);
-
+    if ((notify_fd = open(TOY_SYSFS_NOTIFY, O_RDWR)) < 0) {
+        perror("Unable to open notify");
+        exit(1);
     }
+
+    sensor_fd[0].fd = notify_fd;
+    sensor_fd[0].events = POLLPRI;
+
+    while (1) {
+        rv = poll(sensor_fd, 1, 100000000);
+        if (rv < 0) {
+            printf("poll error\n");
+        }
+        else if (rv == 0) {
+            printf("Timeout occurred!\n");
+        }
+
+        if (read(notify_fd, buff, 100) < 0) {
+            continue;
+        }
+
+        printf("Sensor read: %s", buff);
+        lseek(notify_fd, 0, SEEK_SET);
+
+        if (the_sensor_info != NULL) {
+            the_sensor_info->temp = atoi(buff);
+            the_sensor_info->press = 11;
+            the_sensor_info->humidity = 80;
+        }
+
+        msg.msg_type = SENSOR_DATA;
+        msg.param1 = shmid;
+        msg.param2 = 0;
+        mqretcode = mq_send(monitor_queue, (char *)&msg, sizeof(msg), 0);
+        if (mqretcode == 0) {
+            printf("Sensor thread: message sent to monitor_queue\n");
+        } else {
+            perror("Sensor thread: failed to send message to monitor_queue");
+        }
+    }
+
+    close(notify_fd);
+
     return 0;
 }
 
@@ -618,11 +644,11 @@ sizeof(shm_sensor_t));
 
     /* create threads */
 
-    if(pthread_create(&command_thread_tid, NULL, command_thread, "command_thread...\n") == -1) {
+    if(pthread_create(&command_thread_tid, NULL, command_thread, "command_thread...\n") != 0) {
         fprintf(stderr, "pthread_create error - command_thread");
     }
 
-    if(pthread_create(&sensor_thread_tid, NULL, sensor_thread, "sensor_thread...\n") == -1) {
+    if(pthread_create(&sensor_thread_tid, NULL, sensor_thread, "sensor_thread...\n") != 0) {
         fprintf(stderr, "pthread_create error - sensor_thread");
     }
 

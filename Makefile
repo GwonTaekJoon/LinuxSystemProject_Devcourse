@@ -55,6 +55,7 @@ clean:
 	make -C drivers/simple_io clean
 	make -C drivers/engine clean
 	make -C drivers/state_machine clean
+	make -C drivers/sensor clean
 
 # Phony targets
 .PHONY: all clean libcamera.oem.so libcamera.toy.so
@@ -64,4 +65,5 @@ modules:
 	cd drivers/simple_io && make
 	cd drivers/engine && make
 	cd drivers/state_machine && make
+	cd drivers/sensor && make
 

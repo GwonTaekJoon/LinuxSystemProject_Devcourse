@@ -32,11 +32,11 @@
 #include <hardware.h>
 
 #define CAMERA_TAKE_PICTURE 1
+
 #define SENSOR_DATA 1
+#define DUMP_STATE 2
 #define TOY_TEST_FS "./fs/"
 #define BUF_LEN 1024
-
-#define DUMP_STATE 2
 
 static int toy_timer = 0;
 pthread_mutex_t system_loop_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -61,14 +61,15 @@ void sighandler_timer() {
     pthread_mutex_lock(&toy_timer_mutex);
     ++toy_timer;
     pthread_mutex_unlock(&toy_timer_mutex);
+    /*
     //signal_exit();
     time_t rawTime;
     struct tm* formattedTime;
     rawTime = time(NULL);
-    /*rawTime has a time value in seconds since January 1, 1970 */
+    //rawTime has a time value in seconds since January 1, 1970 
 
     formattedTime = localtime(&rawTime);
-    /*localtime function turns rawTime into easily recognizable value using tm sturct*/
+    //localtime function turns rawTime into easily recognizable value using tm sturct
 
     int year = formattedTime -> tm_year + 1900;
     int month = formattedTime -> tm_mon + 1;
@@ -77,7 +78,7 @@ void sighandler_timer() {
     int min = formattedTime -> tm_min;
     int sec = formattedTime -> tm_sec;
 
-    /*
+    
     printf("Current Time Info : %d year %d month %d day %d:%d:%d\ntimer_count : %d\n"
     ,year, month, day, hour, min, sec, toy_timer);
     */
@@ -261,43 +262,56 @@ void *disk_service_thread(void * arg) {
     }*/
 
 }
-
-void *monitor_thread(void * arg) {
-
+void *monitor_thread(void* arg)
+{
     char *s = arg;
     int mqretcode;
     toy_msg_t msg;
-
     int shmid;
 
-    printf("%s", s);
+    printf("%s", s);  // Confirm that the monitor_thread has started
+    
+    while (1) {
+        printf("monitor_thread: Waiting to receive message...\n");
 
-    while(1) {
-        mqretcode = (int)mq_receive(monitor_queue, \
-			(void *)&msg, sizeof(toy_msg_t), 0);
-	assert(mqretcode >= 0);
-	printf("monitor_thread: message arrived\n");
-	printf("msg.type: %d\n", msg.msg_type);
-	printf("msg.param1: %d\n", msg.param1);
-	printf("msg.param2: %d\n", msg.param2);
+        mqretcode = (int)mq_receive(monitor_queue, (void *)&msg, sizeof(toy_msg_t), 0);
+        
+        if (mqretcode == -1) {
+            perror("monitor_thread: mq_receive failed");
+            continue;
+        }
 
+        printf("monitor_thread: Message received\n");
+        printf("msg.type: %d\n", msg.msg_type);
+        printf("msg.param1: %d\n", msg.param1);
+        printf("msg.param2: %d\n", msg.param2);
 
+        if (msg.msg_type == SENSOR_DATA) {
+            shmid = msg.param1;
+            printf("monitor_thread: Attaching to shared memory with shmid=%d\n", shmid);
+            the_sensor_info = toy_shm_attach(shmid);
+            
+            if (the_sensor_info == NULL) {
+                perror("monitor_thread: Failed to attach shared memory");
+                continue;
+            }
 
-        if(msg.msg_type == SENSOR_DATA) {
-	    shmid = msg.param1;
-	    the_sensor_info = toy_shm_attach(shmid);
-	    printf("sensor temp : %d\n", the_sensor_info -> temp);
-	    printf("sensor press : %d\n", the_sensor_info -> press);
-	    printf("sensor humidity : %d\n", the_sensor_info -> humidity);
-	    toy_shm_detach(the_sensor_info);
-        } else if(msg.msg_type == DUMP_STATE) {
-		dump_state();
-	} else {
-		printf("monitor_thread: unknown message ... \n");
-	}
+            // Check if shared memory contains valid sensor data
+            printf("monitor_thread: Sensor data received:\n");
+            printf("sensor temp: %d\n", the_sensor_info->temp);
+            printf("sensor press: %d\n", the_sensor_info->press);
+            printf("sensor humidity: %d\n", the_sensor_info->humidity);
+
+            toy_shm_detach(the_sensor_info);
+           
+        } else if (msg.msg_type == DUMP_STATE) {
+            dump_state();
+        } else {
+            printf("monitor_thread: Unknown message type received.\n");
+        }
     }
-    return 0;
 
+    return 0;
 }
 
 void toy_camera_notify_callback(int32_t msg_type, int32_t ext1, int32_t ext2)
@@ -326,13 +340,14 @@ void *camera_service_thread (void * arg) {
     ret = hw_get_camera_module((const hw_module_t **)&module);
     assert(ret == 0);
 
-    module -> take_picture(); /*test before receiving signal*/
+    /*
+    module -> take_picture(); //test before receiving signal
     printf("Camera module name: %s\n", module -> name);
     printf("Camera module tag: %d\n", module -> tag);
     printf("Camera module id: %s\n", module -> id);
     module -> open();
     module -> set_callbacks(toy_camera_data_callback, toy_camera_data_callback);
-
+    */
     //toy_camera_open();
     while(1) {
 	mqretcode = (int)mq_receive(camera_queue, (void *)&msg, sizeof(toy_msg_t), 0);
@@ -387,7 +402,7 @@ static void *timer_thread(void *not_used)
     }
 
     /* init timer */
-    set_periodic_timer(1, 1);
+    set_periodic_timer(1, 0);
 
 
     while(!global_timer_stopped) {
@@ -504,13 +519,13 @@ int system_server()
 
 
     
-
+    /*
     pthread_detach(watchdog_thread_tid);
     pthread_detach(disk_service_thread_tid);
     pthread_detach(monitor_thread_tid);
     pthread_detach(camera_service_thread_tid);
     pthread_detach(timer_thread_tid);
-
+    */
 
    printf("system init done. waiting...\n");
 
@@ -518,10 +533,7 @@ int system_server()
 
 
    while(system_loop_exit == false) {
-
-	pthread_cond_wait(&system_loop_cond, &system_loop_mutex);
-
-
+	    pthread_cond_wait(&system_loop_cond, &system_loop_mutex);
    }
 
 
