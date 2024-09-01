@@ -32,8 +32,12 @@
 
 #define MAX_TIMEOUT_MSEC    2000
 
-#define MOTOR_1_SET_SPEED _IOW('w', '1', int32_t *)
-#define MOTOR_2_SET_SPEED _IOW('w', '2', int32_t *)
+#define MOTOR_1_START_SPEED _IOW('w', '1', int32_t *)
+#define MOTOR_2_START_SPEED _IOW('w', '2', int32_t *)
+#define MOTOR_1_SET_SPEED _IOW('w', '3', int32_t *)
+#define MOTOR_2_SET_SPEED _IOW('w', '4', int32_t *)
+#define MOTOR_1_HALT _IOW('w', '5', int32_t *)
+#define MOTOR_2_HALT _IOW('w', '6', int32_t *)
 
 #define DRIVER_NAME "toy_engine_driver"
 #define DRIVER_CLASS "toy_engine_class"
@@ -193,6 +197,20 @@ static long int toy_ioctl(struct file *file, unsigned cmd, unsigned long arg)
     
     switch (cmd)
     {
+    case MOTOR_1_START_SPEED:
+        pr_info("MOTOR_1: %d\n", *(int *)arg);
+        motor_1_speed = *(int *)arg;
+        hrtimer_init(&motor_1_hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+        motor_1_hrtimer.function = *motor_1_timer_callback;
+        hrtimer_start(&motor_1_hrtimer, 0, HRTIMER_MODE_REL);
+        break;
+    case MOTOR_2_START_SPEED:
+        pr_info("MOTOR_2: %d\n", *(int *)arg);
+        motor_2_speed = *(int *)arg;
+        hrtimer_init(&motor_2_hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+        motor_2_hrtimer.function = &motor_2_timer_callback;
+        hrtimer_start(&motor_2_hrtimer, 0, HRTIMER_MODE_REL);
+        break;
     case MOTOR_1_SET_SPEED:
         pr_info("MOTOR_1: %d\n", *(int *)arg);
         motor_1_speed = *(int *)arg;
@@ -201,7 +219,18 @@ static long int toy_ioctl(struct file *file, unsigned cmd, unsigned long arg)
         pr_info("MOTOR_2: %d\n", *(int *)arg);
         motor_2_speed = *(int *)arg;
         break;
-    
+    case MOTOR_1_HALT:
+        pr_info("HALT MOTOR_1: %d\n", *(int *)arg);
+        hrtimer_try_to_cancel(&motor_1_hrtimer);
+        MOTOR_1_LED_LEFT_OFF();
+        MOTOR_1_LED_RIGHT_OFF();
+        break;
+    case MOTOR_2_HALT:
+        pr_info("HALT MOTOR_2: %d\n", *(int *)arg);
+        hrtimer_try_to_cancel(&motor_2_hrtimer);
+        MOTOR_2_LED_LEFT_OFF();
+        MOTOR_2_LED_RIGHT_OFF();
+        break;
     default:
         break;
     }

@@ -30,6 +30,7 @@
 #include <dirent.h>
 #include <dump_state.h>
 #include <hardware.h>
+#include <Engine.h>
 
 #define CAMERA_TAKE_PICTURE 1
 
@@ -433,12 +434,22 @@ void *engine_thread(void *arg)
     printf("%s", s);
 
     while(1) {
-        mqretcode = (int)mq_receive(engine_queue, (void *)&msg, sizeof(toy_msg_t), 0);
-        assert(mqretcode >= 0);
-        printf("engine_service_thread: message arrived");
-        printf("msg.type: %d\n", msg.msg_type);
-        printf("msg.param1: %d\n", msg.param1);
-        printf("msg.param2: %d\n", msg.param2);
+        // right motor 10 -> 50 for 2 seconds
+        // left motor 30 for 5 seconds
+        set_right_motor_speed(10);
+        set_left_motor_speed(30);
+        posix_sleep_ms(2000);
+        set_right_motor_speed(50);
+        posix_sleep_ms(3000);
+        // right motor 50 -> 95 for 3 seconds
+        // left motor 30 -> 80 for 3 seconds
+        set_right_motor_speed(95);
+        set_left_motor_speed(80);
+        posix_sleep_ms(3000);
+        halt_right_motor();
+        halt_left_motor();
+        posix_sleep_ms(5000);
+
 
     }
 
