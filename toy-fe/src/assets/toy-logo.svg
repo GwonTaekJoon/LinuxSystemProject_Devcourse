@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="138"
+   height="30"
+   viewBox="0 0 138 30"
+   version="1.1"
+   id="svg4"
+   sodipodi:docname="toy-logo.svg"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   style="fill:none">
+  <metadata
+     id="metadata10">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="2560"
+     inkscape:window-height="1403"
+     id="namedview6"
+     showgrid="false"
+     inkscape:zoom="5.057971"
+     inkscape:cx="113.74962"
+     inkscape:cy="-6.5937167"
+     inkscape:window-x="2880"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg4" />
+  <rect
+     style="fill:#ffffff"
+     id="rect23"
+     width="1.0873926"
+     height="0.5931232"
+     x="37.26791"
+     y="88.247849" />
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-weight:normal;font-size:21.91680336px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.54792005"
+     x="3.6867058"
+     y="19.910006"
+     id="text825"
+     transform="scale(0.89547239,1.116729)"><tspan
+       sodipodi:role="line"
+       id="tspan823"
+       x="3.6867058"
+       y="19.910006"
+       style="stroke-width:0.54792005">TOY PROJECT</tspan></text>
+</svg>

@@ -1,0 +1,34 @@
+{
+    "eslint.enable": true,
+    "eslint.probe": [
+        "javascript",
+        "typescript",
+        "typescriptreact"
+    ],
+    "eslint.onIgnoredFiles": "warn",
+    "eslint.workingDirectories": [
+        {
+            "directory": "${cwd}",
+        },
+        {
+            "pattern":  "toy-*"
+        },
+        {
+            "directory": "tests",
+            "!cwd": true
+        }
+    ],
+    "python.linting.pylintEnabled": true,
+    "python.testing.unittestEnabled": true,
+    "licenser.license": "Custom",
+    "licenser.customHeader": "Copyright (C) @YEAR@ TOY. \n",
+    "files.trimTrailingWhitespace": true,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/node_modules": true
+    },
+}

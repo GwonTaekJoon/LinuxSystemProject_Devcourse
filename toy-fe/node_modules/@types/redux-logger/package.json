@@ -1,0 +1,32 @@
+{
+    "name": "@types/redux-logger",
+    "version": "3.0.13",
+    "description": "TypeScript definitions for redux-logger",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/redux-logger",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "Alexander Rusakov",
+            "githubUsername": "arusakov",
+            "url": "https://github.com/arusakov"
+        },
+        {
+            "name": "Kevin Groat",
+            "githubUsername": "kgroat",
+            "url": "https://github.com/kgroat"
+        }
+    ],
+    "main": "",
+    "types": "index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/redux-logger"
+    },
+    "scripts": {},
+    "dependencies": {
+        "redux": "^5.0.0"
+    },
+    "typesPublisherContentHash": "bedab10ce4de234e8b6297c9c95cea05195499cd88b6ddb6430f7dec9b39e6ec",
+    "typeScriptVersion": "4.6"
+}

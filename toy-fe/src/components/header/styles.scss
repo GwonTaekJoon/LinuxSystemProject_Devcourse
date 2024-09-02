@@ -1,0 +1,23 @@
+@import '../../base.scss';
+
+.toy-header.ant-layout-header {
+    display: flex;
+    padding-left: 0;
+    padding-right: 0;
+    line-height: 0;
+    height: $header-height;
+    background: $header-color;
+}
+
+.toy-left-header {
+    width: 50%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.anticon.toy-logo-icon {
+    > svg {
+        transform: scale(0.8);
+    }
+}

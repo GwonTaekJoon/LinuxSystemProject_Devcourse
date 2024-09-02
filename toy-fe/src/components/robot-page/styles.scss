@@ -1,0 +1,70 @@
+@import '../../base.scss';
+
+.toy-robot-details-wrapper {
+    overflow-y: auto;
+    height: 100%;
+    width: 100%;
+
+    .toy-robot-details {
+        width: 100%;
+        height: auto;
+        border: 1px solid $border-color-1;
+        border-radius: 6px;
+        padding: 20px;
+        background: $background-color-1;
+
+        > div:nth-child(2) {
+            > div:nth-child(2) {
+                padding-left: 20px;
+
+                > div:not(:first-child) {
+                    margin-top: 20px;
+                }
+            }
+        }
+    }
+
+    > div > div > div > button {
+        display: flex;
+        align-items: center;
+    }
+}
+
+.toy-robots-top-bar {
+    margin: $grid-unit-size * 1 0;
+}
+
+.toy-robot-top-bar {
+    margin: $grid-unit-size * 2 0;
+}
+
+.toy-robot-parameters {
+    margin-top: $grid-unit-size * 2;
+    width: $grid-unit-size * 32;
+}
+
+.ant-typography.toy-histories-header {
+    margin-bottom: 0;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.toy-robot-histories-table > div > div {
+    text-align: center;
+
+    > .ant-table-pagination.ant-pagination {
+        float: none;
+    }
+}
+
+.toy-robot-item-preview-wrapper {
+    align-items: left;
+}
+
+.anticon.toy-logo-icon {
+    > svg {
+        transform: scale(0.8);
+    }
+}
+
+

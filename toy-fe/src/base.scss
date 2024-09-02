@@ -1,0 +1,25 @@
+$grid-unit-size: 8px;
+
+$header-height: $grid-unit-size * 7;
+
+$layout-sm-grid-size: $grid-unit-size / 2;
+$layout-lg-grid-size: $grid-unit-size * 2;
+$layout-sm-grid-color: rgba(0, 0, 0, 0.15);
+$layout-lg-grid-color: rgba(0, 0, 0, 0.15);
+
+$header-color: #FFFFFF;
+$text-color: #303030;
+$border-color-1: #CED4DA;
+$border-color-2: rgb(240, 240, 240);
+$border-color-3: #242424;
+$border-color-hover: #7a7574;
+$background-color-1: white;
+$background-color-2: #F8F8FB;
+$transparent-color: rgba(0, 0, 0, 0);
+$slider-color: #1890ff;
+
+$box-shadow-base: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
+
+$monospaced-fonts-stack: Consolas, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono,
+    Courier New, monospace;
