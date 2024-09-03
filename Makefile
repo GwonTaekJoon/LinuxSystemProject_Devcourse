@@ -2,13 +2,14 @@
 
 BUILDROOT_DIR = /home/gwontaekjoon/Desktop/buildroot
 TOOLCHAIN_DIR = $(BUILDROOT_DIR)/output/host/bin
-CC = $(TOOLCHAIN_DIR)/aarch64-buildroot-linux-gnu-gcc
-CXX = $(TOOLCHAIN_DIR)/aarch64-buildroot-linux-gnu-g++
+#CC = $(TOOLCHAIN_DIR)/aarch64-buildroot-linux-gnu-gcc
+#CXX = $(TOOLCHAIN_DIR)/aarch64-buildroot-linux-gnu-g++
 CFLAGS = -Wall -g -Iui -Iweb_server -Isystem -Ihal -I./ -fPIC -Ihal/include -Iengine
 CXXFLAGS = $(CFLAGS) -std=c++14 -g -O0
 CXXLIBS = -lpthread -lm -lrt -ldl -lseccomp
 LDFLAGS = -Wl,--no-as-needed
-
+CC = gcc # test in not target
+CXX = g++ # test in not target
 # Source files and Object files
 CSRC = main.c ui/gui.c ui/input.c web_server/web_server.c \
        system/system_server.c system/shared_memory.c system/dump_state.c \

@@ -123,3 +123,18 @@ export function updateRobotAsync(robotInstance: any,
         }
     };
 }
+
+export function updateRobotState(id: number,
+    hostname: string,
+    temperature: string): AnyAction {
+    const action = {
+        type: RobotsActionTypes.UPDATE_ROBOT_STATE,
+        payload: {
+            id,
+            hostname,
+            temperature,
+        },
+    };
+
+    return action;
+}

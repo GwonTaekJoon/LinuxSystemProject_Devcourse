@@ -55,6 +55,7 @@ static mqd_t watchdog_queue;
 static mqd_t monitor_queue;
 static mqd_t disk_queue;
 static mqd_t camera_queue;
+static mqd_t backend_queue;
 
 static shm_sensor_t *the_sensor_info = NULL;
 
@@ -69,7 +70,7 @@ void segfault_handler(int sig_num, siginfo_t * info, void * ucontext) {
   uc = (sig_ucontext_t *) ucontext;
 
   /* Get the address at the time the signal was raised */
-  caller_address = (void *) uc->uc_mcontext.pc;  // rip: x86_64 specific     arm_pc: pc
+  caller_address = (void *) uc->uc_mcontext.pc;  // rip: x86_64 specific, pc : arm     arm_pc: pc
 
   fprintf(stderr, "\n");
 
@@ -166,7 +167,7 @@ int toy_mincore(char **args);
 int toy_simple_io(char **args);
 int toy_set_motor_1_speed(char **args);
 int toy_set_motor_2_speed(char **args);
-
+int toy_send_to_be(char **args);
 char *builtin_str[] = {
     "send",
     "sh",
@@ -178,7 +179,8 @@ char *builtin_str[] = {
     "mincore",
     "n",
     "m1",
-    "m2"
+    "m2",
+    "be"
 };
 
 int (*builtin_func[]) (char **) = {
@@ -192,7 +194,8 @@ int (*builtin_func[]) (char **) = {
     &toy_mincore,
     &toy_simple_io,
     &toy_set_motor_1_speed,
-    &toy_set_motor_2_speed
+    &toy_set_motor_2_speed,
+    &toy_send_to_be
 };
 
 int toy_num_builtins()
@@ -538,6 +541,25 @@ int toy_set_motor_2_speed(char **args)
 
 err:
     close(dev);
+
+    return 1;
+}
+
+int toy_send_to_be(char **args)
+{
+    int mqretcode;
+    robot_message_t robot_msg;
+
+    if(args[1] == NULL) {
+        return 1;
+    }
+
+    robot_msg.id = MESSAGE_ID_INFO;
+    robot_msg.data.info.id = 12341234;
+    robot_msg.data.info.temperature = atoi(args[1]);
+    mqretcode = mq_send(backend_queue, (char *)&robot_msg, \
+    sizeof(robot_msg), 0);
+    assert(mqretcode == 0);
 
     return 1;
 }

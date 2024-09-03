@@ -5,9 +5,10 @@ import (
 	"log"
 )
 
-type BoradCastRobotState struct {
-	RobotId uint64 `json:"robot_id"`
-	Robot   string `json:"robot"`
+type BroadcastRobotState struct {
+	RobotId     uint64 `json:"id"`
+	Hostname    string `json:"hostname"`
+	Temperature string `json:"temperature"`
 }
 
 var errLog *log.Logger
@@ -20,15 +21,16 @@ func checkErr(err error, errorHappenPlace string) {
 	}
 }
 
-func BroadcastRobotInfo(id uint64, data RobotState, hub *Hub, status string) {
+func BroadcastRobot(hub *Hub, id uint64, hostname string, temperature string) {
 
-	state := &BoradCastRobotState{
-		RobotId: id,
-		Robot:   status,
+	state := &BroadcastRobotState{
+		RobotId:     id,
+		Hostname:    hostname,
+		Temperature: temperature,
 	}
-	log.Println(status)
+	log.Printf("id: %d, hostname: %s, temerature: %s", id, hostname, temperature)
 	marsh, err := json.Marshal(state)
-	checkErr(err, "BoradCastRobotState: json marshal")
+	checkErr(err, "BroadcastRobotState: json marshal")
 	// send status message to web clients
 	hub.BroadcastRobotStateMessage(marsh)
 }

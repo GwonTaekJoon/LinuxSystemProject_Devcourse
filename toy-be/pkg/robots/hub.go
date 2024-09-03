@@ -35,7 +35,7 @@ func (h *Hub) HubStart() {
 				delete(h.clients, client)
 			}
 		case message := <-h.boradcastRobotState:
-			var t BoradCastRobotState
+			var t BroadcastRobotState
 			for client := range h.clients {
 				err := json.Unmarshal(message, &t)
 				checkErr(err, "HubStart: broadcast json unmarshal")
