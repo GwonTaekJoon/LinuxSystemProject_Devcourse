@@ -8,3 +8,5 @@ toy-be/* linguist-vendored
 *.js linguist-vendored
 *.html linguist-vendored
 *.go linguist-vendored
+*.ts linguist-vendored
+*.scss linguis-vendored
