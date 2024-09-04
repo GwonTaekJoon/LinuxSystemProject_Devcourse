@@ -42,7 +42,7 @@ void LeftMotor::StartMotorSpeed(int speed)
 void LeftMotor::SetMotorSpeed(int speed)
 {
     cout << "Call toy_engine_driver: " << speed << endl;
-    int dev = open("/dev/toy_engine/driver", O_RDWR | O_NDELAY);
+    int dev = open("/dev/toy_engine_driver", O_RDWR | O_NDELAY);
     if(dev < 0) {
         cout << "module open error" << endl;
         return;
@@ -57,7 +57,7 @@ void LeftMotor::SetMotorSpeed(int speed)
 
 void LeftMotor::HaltMotor()
 {
-    int halt;
+    int halt = 0;
 
     cout << "Call toy_engine_driver : " << endl;
     int dev = open("/dev/toy_engine_driver", O_RDWR | O_NDELAY);
@@ -102,7 +102,7 @@ STATE_DEFINE(LeftMotor, Idle, NoEventData)
 
     // perform the stop motor porcessing here
     // transition to Idle via an internal event
-    InternalEvent(ST_IDLE);
+    //InternalEvent(ST_IDLE);
     HaltMotor();
 }
 

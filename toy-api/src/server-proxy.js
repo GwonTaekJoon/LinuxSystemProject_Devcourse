@@ -89,6 +89,80 @@
                 }
             }
 
+            async function setLeftMotorSpeed(id, speed) {
+                const { backendAPI } = config;
+                const body = JSON.stringify({
+                    speed,
+                });
+
+                try {
+                    await Axios.put(`${backendAPI}/robots/${id}/lspeed`, body, {
+                        proxy: config.proxy,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                } catch (errorData) {
+                    throw generateError(errorData);
+                }
+            }
+
+            async function setRightMotorSpeed(id, speed) {
+                const { backendAPI } = config;
+                const body = JSON.stringify({
+                    speed,
+                });
+
+                try {
+                    await Axios.put(`${backendAPI}/robots/${id}/rspeed`, body, {
+                        proxy: config.proxy,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                } catch (errorData) {
+                    throw generateError(errorData);
+                }
+            }
+
+            async function haltLeftMotor(id) {
+                const { backendAPI } = config;
+                const body = JSON.stringify({
+                    op: 'Halt',
+                    motor: 'Left',
+                });
+
+                try {
+                    await Axios.put(`${backendAPI}/robots/${id}/halt`, body, {
+                        proxy: config.proxy,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                } catch (errorData) {
+                    throw generateError(errorData);
+                }
+            }
+
+            async function haltRightMotor(id) {
+                const { backendAPI } = config;
+                const body = JSON.stringify({
+                    op: 'Halt',
+                    motor: 'Right',
+                });
+
+                try {
+                    await Axios.put(`${backendAPI}/robots/${id}/halt`, body, {
+                        proxy: config.proxy,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                } catch (errorData) {
+                    throw generateError(errorData);
+                }
+            }
+
             Object.defineProperties(
                 this,
                 Object.freeze({
@@ -103,6 +177,10 @@
                         value: Object.freeze({
                             getRobots,
                             saveRobot,
+                            setLeftMotorSpeed,
+                            setRightMotorSpeed,
+                            haltLeftMotor,
+                            haltRightMotor,
                         }),
                         writable: false,
                     },

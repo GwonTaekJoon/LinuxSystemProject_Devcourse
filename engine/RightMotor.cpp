@@ -57,7 +57,7 @@ void RightMotor::SetMotorSpeed(int speed)
 
 void RightMotor::HaltMotor()
 {
-    int halt;
+    int halt = 0;
 
     cout << "Call toy_engine_driver: " << endl;
     int dev = open("/dev/toy_engine_driver", O_RDWR | O_NDELAY);

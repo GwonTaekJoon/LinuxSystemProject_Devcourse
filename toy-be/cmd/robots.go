@@ -29,6 +29,10 @@ func InitRobots(hub *robots.Hub, flags *pflag.FlagSet, d pythonData, id string) 
 		ID:          device_id,
 		HostName:    name,
 		Temperature: "0.0",
+		LMotorSpeed: 50,
+		RMotorSpeed: 30,
+		LMotorState: 1,
+		RMotorState: 1,
 	}
 	err = d.store.Robots.Save(&robot)
 	if err != nil {

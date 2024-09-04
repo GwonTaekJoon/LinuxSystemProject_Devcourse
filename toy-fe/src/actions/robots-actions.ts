@@ -12,6 +12,10 @@ export enum RobotsActionTypes {
     UPDATE_ROBOT = 'UPDATE_ROBOT',
     UPDATE_ROBOT_SUCCESS = 'UPDATE_ROBOT_SUCCESS',
     UPDATE_ROBOT_FAILED = 'UPDATE_ROBOT_FAILED',
+    UPDATE_ROBOT_STATE = 'UPDATE_ROBOT_STATE',
+    SET_LEFT_MOTOR_SPEED = 'SET_LEFT_MOTOR_SPEED',
+    SET_LEFT_MOTOR_SPEED_SUCCESS = 'SET_LEFT_MOTOR_SPEED_SUCCESS',
+    SET_LEFT_MOTOR_SPEED_FAILED = 'SET_LEFT_MOTOR_SPEED_FAILED',
 }
 
 function getRobots(): AnyAction {
@@ -120,6 +124,46 @@ export function updateRobotAsync(robotInstance: any,
             }
 
             dispatch(updateRobotFailed(error, robot));
+        }
+    };
+}
+
+function setLeftMotorSpeed(): AnyAction {
+    const action = {
+        type: RobotsActionTypes.SET_LEFT_MOTOR_SPEED,
+    };
+
+    return action;
+}
+
+export function setLeftMotorSpeedSuccess(robot: any): AnyAction {
+    const action = {
+        type: RobotsActionTypes.SET_LEFT_MOTOR_SPEED_SUCCESS,
+        payload: { robot },
+    };
+
+    return action;
+}
+
+function setLeftMotorSpeedFailed(error: any): AnyAction {
+    const action = {
+        type: RobotsActionTypes.SET_LEFT_MOTOR_SPEED_FAILED,
+        payload: { error },
+    };
+
+    return action;
+}
+
+export function setLeftMotorSpeedAsync(robotInstance: any,
+    speed: number): ThunkAction<Promise<void>, CombinedState, {}, AnyAction> {
+    return async (dispatch: ActionCreator<Dispatch>): Promise<void> => {
+        try {
+            dispatch(setLeftMotorSpeed());
+            robotInstance.lmotorSpeed = speed;
+            await robotInstance.setLeftMotorSpeed();
+            dispatch(setLeftMotorSpeedSuccess(robotInstance));
+        } catch (error) {
+            dispatch(setLeftMotorSpeedFailed(error));
         }
     };
 }

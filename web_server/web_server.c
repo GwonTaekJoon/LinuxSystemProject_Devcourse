@@ -9,6 +9,16 @@
 #include <input.h>
 #include <web_server.h>
 #include <signal.h>
+#include <sys/mman.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
 
 #define STACK_SIZE (8 * 1024 * 1024)
 #define errExit(msg)    do{perror(msg); exit(EXIT_FAILURE);\
@@ -18,6 +28,14 @@ static int child_func(void *arg)
 {
 
     char path[1024];
+    struct ifreq ifr;
+    char *array = "eth0";
+
+    int n = socket(AF_INET, SOCK_DGRAM, 0);
+    ifr.ifr_addr.sa_family = AF_INET;
+    strncpy(ifr.ifr_name, array, IFNAMSIZ - 1);
+    ioctl(n, SIOCGIFADDR, &ifr);
+    close(n);
 
     if(getcwd(path, 1024) == NULL) {
         //pwd
@@ -29,12 +47,16 @@ static int child_func(void *arg)
     printf(" - [%4d] Current namespace Parent PID: %d\n",getpid(), getppid());
     printf("current working directory: %s\n", path);
 
+    /* filebrowser
     if(execl("/usr/local/bin/filebrowser", "filebrowser", "-p", "8282", \
     (char *)NULL)) {
         printf("exec failed\n");
+    } */
+
+   if(execl("./toy-be", "toy-be", "-a", inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr) -> sin_addr), "-p", "8080",\
+    "-i", "12341234", (char *)NULL)) {
+        printf("execl failed\n");
     }
-
-
 
 
 }
@@ -71,8 +93,7 @@ int create_web_server()
         return -1;
     }
 
-    web_server_Pid = clone(child_func, stack + STACK_SIZE, CLONE_NEWUTS | CLONE_NEWIPC \
-    | CLONE_NEWPID | CLONE_NEWNS | SIGCHLD, "Hello");
+    web_server_Pid = clone(child_func, stack + STACK_SIZE, SIGCHLD, "Hello");
     if(web_server_Pid == -1) {
         errExit("clone\n");
     }

@@ -148,6 +148,7 @@ var rootCmd = &cobra.Command{
 		InitRobots(hub, cmd.Flags(), d, server.ID)
 
 		go robots.InitWebSocketService(hub)
+		go robots.RobotThread(d.store.Robots, server, hub)
 
 		log.Println("Listening on", listener.Addr().String())
 		if err := http.Serve(listener, handler); err != nil {
@@ -342,7 +343,7 @@ func quickSetup(flags *pflag.FlagSet, d pythonData) {
 		Username:     username,
 		Password:     password,
 		LockPassword: false,
-		Fs:           afero.NewBasePathFs(afero.NewOsFs(), "/home/jh/temp"),
+		Fs:           afero.NewBasePathFs(afero.NewOsFs(), "/home/kesl/temp"),
 	}
 
 	set.Defaults.Apply(user)

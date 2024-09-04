@@ -2,7 +2,7 @@ import { connect } from 'react-redux';
 import { withRouter } from 'react-router-dom';
 import { RouteComponentProps } from 'react-router';
 
-import { getRobotsAsync } from 'actions/robots-actions';
+import { getRobotsAsync, setLeftMotorSpeedAsync } from 'actions/robots-actions';
 
 import RobotPageComponent from 'components/robot-page/robot-page';
 import { Robot, CombinedState } from 'reducers/interfaces';
@@ -19,11 +19,13 @@ interface StateToProps {
 interface DispatchToProps {
     getRobot: () => void;
     webSocketInitialized: () => void;
+    setLeftMotorSpeed: (robotInstance: any, speed: number) => void;
+    // haltLeftMotor: () => void;
 }
 
 function mapStateToProps(state: CombinedState, own: Props): StateToProps {
     const { robots } = state;
-    const { gettingQuery, fetching, updating } = robots;
+    const { fetching, updating } = robots;
 
     const filteredRobots = state.robots.current;
 
@@ -55,6 +57,9 @@ function mapDispatchToProps(dispatch: any, own: Props): DispatchToProps {
             );
         },
         webSocketInitialized: (): void => dispatch(webSocketActionsAsync()),
+        // eslint-disable-next-line max-len
+        setLeftMotorSpeed: (robotInstance: any, speed: number):void => dispatch(setLeftMotorSpeedAsync(robotInstance, speed)),
+
     };
 }
 

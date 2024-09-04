@@ -3,6 +3,7 @@ import { Row, Col } from 'antd/lib/grid';
 import Text from 'antd/lib/typography/Text';
 import Title from 'antd/lib/typography/Title';
 import Icon from '@ant-design/icons';
+import { Divider } from 'antd';
 import { Robot } from 'reducers/interfaces';
 import {
     RPIIcon,
@@ -10,6 +11,8 @@ import {
 
 interface Props {
     robot: Robot;
+    lspeed: number;
+    setLeftMotorSpeed: (robotInstance: any, speed: number) => void;
 }
 
 interface State {
@@ -23,7 +26,7 @@ class RobotInfoComponent extends React.PureComponent<Props, State> {
         const { robot } = props;
 
         this.state = {
-            name: robot.instance.hostname,
+            name: robot.state.hostname,
         };
     }
 
@@ -60,16 +63,31 @@ class RobotInfoComponent extends React.PureComponent<Props, State> {
     }
 
     private renderRobotDescription(): JSX.Element {
-        const { robot } = this.props;
+        const { robot, lspeed, setLeftMotorSpeed } = this.props;
         const {
             temperature,
-        } = robot.instance;
+        } = robot.state;
 
         return (
             <Col>
                 <Text strong style={{ marginRight: 5 }}>
-                    {` Temperature: ${temperature} ˚C `}
+                    {` * Temperature: ${temperature} ˚C `}
                 </Text>
+                <Divider />
+                <Text strong style={{ marginRight: 5 }}>
+                    {' * Left Motor Speed '}
+                </Text>
+                <Title
+                    level={5}
+                    editable={{
+                        onChange: (value: string): void => {
+                            setLeftMotorSpeed(robot.instance, Number(value));
+                        },
+                    }}
+                    className='toy-text-color'
+                >
+                    {robot.instance.lmotorSpeed}
+                </Title>
             </Col>
         );
     }

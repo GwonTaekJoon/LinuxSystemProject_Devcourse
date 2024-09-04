@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -20,6 +21,10 @@ type Robots struct {
 	Next     string               `json:"next"`
 	Previous string               `json:"previous"`
 	Results  []*robots.RobotState `json:"results"`
+}
+
+type MotorState struct {
+	Speed uint32 `json:"speed"`
 }
 
 func getRobot(_ http.ResponseWriter, r *http.Request) (*modifyRobotRequest, error) {
@@ -78,6 +83,27 @@ var robotDeleteHandler = withUser(func(w http.ResponseWriter, r *http.Request, d
 
 	return http.StatusOK, nil
 })
+
+var robotSetLeftSpeedHandler = func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	req := &MotorState{}
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		return http.StatusBadRequest, err
+	}
+	log.Printf("robotSetLeftSpeedHandler: %d", req.Speed)
+	robots.SendEngineMessage(0, req.Speed)
+
+	return http.StatusOK, nil
+
+}
+
+var robotSetRightSpeedHandler = func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	return http.StatusOK, nil
+}
+
+var robotHaltMotorHandler = func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
+	return http.StatusOK, nil
+}
 
 var robotsPostHandler = withUser(func(w http.ResponseWriter, r *http.Request, d *data) (int, error) {
 	req, err := getRobot(w, r)

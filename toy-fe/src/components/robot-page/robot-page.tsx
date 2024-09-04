@@ -4,7 +4,6 @@ import { RouteComponentProps } from 'react-router';
 import { withRouter } from 'react-router-dom';
 import { Row, Col } from 'antd/lib/grid';
 import Spin from 'antd/lib/spin';
-import Result from 'antd/lib/result';
 
 import RobotInfoComponent from 'components/robot-page/robot-info';
 import { Robot } from 'reducers/interfaces';
@@ -14,8 +13,11 @@ interface RobotPageComponentProps {
     robot: Robot | null | undefined;
     fetching: boolean;
     updating: boolean;
+    lspeed: number;
     getRobot: () => void;
     webSocketInitialized: () => void;
+    setLeftMotorSpeed: (robotInstance: any, speed: number) => void;
+
 }
 
 type Props = RobotPageComponentProps & RouteComponentProps<{ id: string }>;
@@ -46,21 +48,14 @@ class RobotPageComponent extends React.PureComponent<Props> {
     }
 
     public render(): JSX.Element {
-        const { robot, updating } = this.props;
+        const { robot, updating, lspeed, setLeftMotorSpeed } = this.props;
 
         if (robot === null) {
             return <Spin size='large' className='toy-spinner' />;
         }
 
         if (typeof robot === 'undefined') {
-            return (
-                <Result
-                    className='toy-not-found'
-                    status='404'
-                    title='Sorry, but this robot was not found'
-                    subTitle='Please, be sure information you tried to get exist and you have access'
-                />
-            );
+            return <Spin size='large' className='toy-spinner' />;
         }
 
         return (
@@ -73,7 +68,11 @@ class RobotPageComponent extends React.PureComponent<Props> {
                 >
                     <Col md={22} lg={18} xl={16} xxl={14}>
                         <TopBarComponent />
-                        <RobotInfoComponent robot={robot as Robot} />
+                        <RobotInfoComponent
+                            robot={robot as Robot}
+                            lspeed={lspeed}
+                            setLeftMotorSpeed={setLeftMotorSpeed}
+                        />
                     </Col>
                 </Row>
                 {updating && <Spin size='large' className='toy-spinner' />}

@@ -39,6 +39,9 @@
 #define TOY_TEST_FS "./fs/"
 #define BUF_LEN 1024
 
+#define LEFT_MOTOR 0
+#define RIGHT_MOTOR 1
+
 static int toy_timer = 0;
 pthread_mutex_t system_loop_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t system_loop_cond = PTHREAD_COND_INITIALIZER;
@@ -49,6 +52,7 @@ static mqd_t monitor_queue;
 static mqd_t disk_queue;
 static mqd_t camera_queue;
 static mqd_t engine_queue;
+static mqd_t backend_queue;
 
 static pthread_mutex_t toy_timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static sem_t global_timer_sem;
@@ -268,47 +272,36 @@ void *monitor_thread(void* arg)
     char *s = arg;
     int mqretcode;
     toy_msg_t msg;
+    robot_message_t robot_msg;
     int shmid;
 
     printf("%s", s);  // Confirm that the monitor_thread has started
     
     while (1) {
-        printf("monitor_thread: Waiting to receive message...\n");
-
         mqretcode = (int)mq_receive(monitor_queue, (void *)&msg, sizeof(toy_msg_t), 0);
-        
-        if (mqretcode == -1) {
-            perror("monitor_thread: mq_receive failed");
-            continue;
-        }
+        assert(mqretcode >= 0);
 
-        printf("monitor_thread: Message received\n");
+        printf("monitor thread: messages arrived.\n");
         printf("msg.type: %d\n", msg.msg_type);
         printf("msg.param1: %d\n", msg.param1);
         printf("msg.param2: %d\n", msg.param2);
-
-        if (msg.msg_type == SENSOR_DATA) {
+        if(msg.msg_type == SENSOR_DATA) {
             shmid = msg.param1;
-            printf("monitor_thread: Attaching to shared memory with shmid=%d\n", shmid);
             the_sensor_info = toy_shm_attach(shmid);
-            
-            if (the_sensor_info == NULL) {
-                perror("monitor_thread: Failed to attach shared memory");
-                continue;
-            }
+            printf("sensor temp: %d\n", the_sensor_info -> temp);
+            printf("sensor info: %d\n", the_sensor_info -> press);
+            printf("sensor humidity %d\n", the_sensor_info -> humidity);
 
-            // Check if shared memory contains valid sensor data
-            printf("monitor_thread: Sensor data received:\n");
-            printf("sensor temp: %d\n", the_sensor_info->temp);
-            printf("sensor press: %d\n", the_sensor_info->press);
-            printf("sensor humidity: %d\n", the_sensor_info->humidity);
-
+            robot_msg.id = MESSAGE_ID_INFO;
+            robot_msg.data.info.id = 12341234;
+            robot_msg.data.info.temperature = (int)(the_sensor_info -> temp / 100);
+            mqretcode = mq_send(backend_queue, (char *)&robot_msg, sizeof(robot_msg), 0);
+            assert(mqretcode == 0);
             toy_shm_detach(the_sensor_info);
-           
-        } else if (msg.msg_type == DUMP_STATE) {
+        } else if(msg.msg_type == DUMP_STATE) {
             dump_state();
         } else {
-            printf("monitor_thread: Unknown message type received.\n");
+            printf("monitor_thread: unknown message. xxx\n");
         }
     }
 
@@ -428,29 +421,36 @@ void *engine_thread(void *arg)
 {
     char *s = arg;
     int mqretcode;
-    toy_msg_t msg;
+    robot_message_t msg;
     int res;
 
     printf("%s", s);
 
     while(1) {
-        // right motor 10 -> 50 for 2 seconds
-        // left motor 30 for 5 seconds
-        set_right_motor_speed(10);
-        set_left_motor_speed(30);
-        posix_sleep_ms(2000);
-        set_right_motor_speed(50);
-        posix_sleep_ms(3000);
-        // right motor 50 -> 95 for 3 seconds
-        // left motor 30 -> 80 for 3 seconds
-        set_right_motor_speed(95);
-        set_left_motor_speed(80);
-        posix_sleep_ms(3000);
-        halt_right_motor();
-        halt_left_motor();
-        posix_sleep_ms(5000);
-
-
+        mqretcode = (int)mq_receive(engine_queue, (void *)&msg, sizeof(robot_message_t), 0);
+        assert(mqretcode >= 0);
+        printf("engine thread : messages arrived.\n");
+        printf("msg.id: %d\n", msg.id);
+        printf("msg.data.motor.id: %d\n", msg.data.motor.id);
+        printf("msg.data.motor.speed: %d\n", msg.data.motor.speed);
+        
+        if(msg.id == MESSAGE_ID_ENGINE && msg.data.motor.id == LEFT_MOTOR) { 
+            // Left motor
+            if(msg.data.motor.speed == 0) { // halt
+                halt_left_motor();
+            } else {
+                set_left_motor_speed(msg.data.motor.speed);
+            }
+        } else if(msg.id == MESSAGE_ID_ENGINE && msg.data.motor.id == RIGHT_MOTOR) {
+            // Right motor
+            if(msg.data.motor.speed == 0) { // halt
+                halt_right_motor();
+            } else {
+                set_right_motor_speed(msg.data.motor.speed);
+            }
+        } else {
+            printf("engine thread: unknown message. xxx\n");
+        }
     }
 
     return 0;
@@ -495,8 +495,11 @@ int system_server()
     assert(disk_queue != -1);
     camera_queue = mq_open("/camera_queue", O_RDWR);
     assert(camera_queue != -1);
-    engine_queue = mq_open("/engine_queue", O_RDWR);
+    engine_queue = mq_open("/mq_be_to_sys", O_RDWR);
     assert(engine_queue != -1);
+    backend_queue = mq_open("/mq_sys_to_be", O_RDWR);
+    assert(backend_queue != -1);
+
 
     if(pthread_create(&watchdog_thread_tid, NULL, watchdog_thread, "watchdog thread\n") == -1) {
         fprintf(stderr,"pthread_create - watchdog\n");

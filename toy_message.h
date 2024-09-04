@@ -18,6 +18,7 @@ typedef struct {
 enum ROBOT_MESSAGE_ID {
     MESSAGE_ID_EXIT = 0,
     MESSAGE_ID_INFO,
+    MESSAGE_ID_ENGINE,
     MESSAGE_ID_MAX
 };
 
@@ -27,8 +28,13 @@ typedef struct robot_info {
     unsigned int temperature;
 } robot_info_t; //40byte
 
+typedef struct motor_control {
+    unsigned int id; // left = 0, right = 1
+    unsigned int speed; // 0 = halt, 1~100 = speed
+} motor_control_t;
 union robot_message_data {
     robot_info_t info;
+    motor_control_t motor;
     char data[MESSAGE_DATA_MAX_LEN];
 };
 

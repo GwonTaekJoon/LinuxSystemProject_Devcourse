@@ -134,7 +134,7 @@ static irq_handler_t k_gpio_irq_signal_handler(unsigned int irq, void *dev_id, s
 /* 0 = HRTIMER_NORESTART, 1 = HRTIMER_RESTART */
 enum hrtimer_restart motor_1_timer_callback(struct hrtimer *timer)
 {
-    pr_info("motor 1 callback function : jiffies value - (%ld).\n", jiffies);
+    pr_info("motor 1 callback function : jiffies value - \"%ld\".\n", jiffies);
 
     motor_1_toggle = !motor_1_toggle;
     if(motor_1_toggle) {
@@ -144,15 +144,15 @@ enum hrtimer_restart motor_1_timer_callback(struct hrtimer *timer)
         MOTOR_1_LED_LEFT_OFF();
         MOTOR_1_LED_RIGHT_ON();
     }
-    hrtimer_forward_now(timer, ms_to_ktime(MAX_TIMEOUT_MSEC - \
-    (MAX_TIMEOUT_MSEC * motor_1_speed / 100 + 1)));
+    int timeout = MAX_TIMEOUT_MSEC * (100 - motor_1_speed) / 100;
+    hrtimer_forward_now(timer, ms_to_ktime(timeout));
     return HRTIMER_RESTART;
 }
 
 enum hrtimer_restart motor_2_timer_callback(struct hrtimer *timer)
 {
 
-    pr_info("motor 2 callback function: jiffies value - %(ld).\n", jiffies);
+    pr_info("motor 2 callback function: jiffies value - \"%ld\".\n", jiffies);
 
     motor_2_toggle = !motor_2_toggle;
     if(motor_2_toggle) {
@@ -162,9 +162,8 @@ enum hrtimer_restart motor_2_timer_callback(struct hrtimer *timer)
             MOTOR_2_LED_LEFT_OFF();
             MOTOR_2_LED_RIGHT_ON();
     }
-
-    hrtimer_forward_now(timer, ms_to_ktime(MAX_TIMEOUT_MSEC - \
-    (MAX_TIMEOUT_MSEC * motor_2_speed / 100 + 1)));
+    int timeout = MAX_TIMEOUT_MSEC * (100 - motor_2_speed) / 100;
+    hrtimer_forward_now(timer, ms_to_ktime(timeout));
     return HRTIMER_RESTART; 
 }
 
@@ -194,39 +193,47 @@ static int toy_driver_close(struct inode *device_file, struct file *instance)
 
 static long int toy_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 {
+    int user_speed;
+    if(copy_from_user(&user_speed, (int32_t *)arg, sizeof(user_speed))) {
+        return -EFAULT;
+    }
     
     switch (cmd)
     {
     case MOTOR_1_START_SPEED:
-        pr_info("MOTOR_1: %d\n", *(int *)arg);
-        motor_1_speed = *(int *)arg;
-        hrtimer_init(&motor_1_hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-        motor_1_hrtimer.function = *motor_1_timer_callback;
-        hrtimer_start(&motor_1_hrtimer, 0, HRTIMER_MODE_REL);
+        pr_info("MOTOR_1: %d\n", user_speed);
+        motor_1_speed = user_speed;
+        if(!hrtimer_active(&motor_1_hrtimer)) {
+            hrtimer_init(&motor_1_hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+            motor_1_hrtimer.function = motor_1_timer_callback;
+        }
+        hrtimer_start(&motor_1_hrtimer, ms_to_ktime(MAX_TIMEOUT_MSEC), HRTIMER_MODE_REL);
         break;
     case MOTOR_2_START_SPEED:
-        pr_info("MOTOR_2: %d\n", *(int *)arg);
-        motor_2_speed = *(int *)arg;
-        hrtimer_init(&motor_2_hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-        motor_2_hrtimer.function = &motor_2_timer_callback;
-        hrtimer_start(&motor_2_hrtimer, 0, HRTIMER_MODE_REL);
+        pr_info("MOTOR_2: %d\n", user_speed);
+        motor_2_speed = user_speed;
+        if(!hrtimer_active(&motor_2_hrtimer)) {
+            hrtimer_init(&motor_2_hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+            motor_2_hrtimer.function = motor_2_timer_callback;
+        }
+        hrtimer_start(&motor_2_hrtimer, ms_to_ktime(MAX_TIMEOUT_MSEC), HRTIMER_MODE_REL);
         break;
     case MOTOR_1_SET_SPEED:
-        pr_info("MOTOR_1: %d\n", *(int *)arg);
-        motor_1_speed = *(int *)arg;
+        pr_info("MOTOR_1: %d\n", user_speed);
+        motor_1_speed = user_speed;
         break;
     case MOTOR_2_SET_SPEED:
-        pr_info("MOTOR_2: %d\n", *(int *)arg);
-        motor_2_speed = *(int *)arg;
+        pr_info("MOTOR_2: %d\n", user_speed);
+        motor_2_speed = user_speed;
         break;
     case MOTOR_1_HALT:
-        pr_info("HALT MOTOR_1: %d\n", *(int *)arg);
+        pr_info("HALT MOTOR_1: %d\n", user_speed);
         hrtimer_try_to_cancel(&motor_1_hrtimer);
         MOTOR_1_LED_LEFT_OFF();
         MOTOR_1_LED_RIGHT_OFF();
         break;
     case MOTOR_2_HALT:
-        pr_info("HALT MOTOR_2: %d\n", *(int *)arg);
+        pr_info("HALT MOTOR_2: %d\n", user_speed);
         hrtimer_try_to_cancel(&motor_2_hrtimer);
         MOTOR_2_LED_LEFT_OFF();
         MOTOR_2_LED_RIGHT_OFF();

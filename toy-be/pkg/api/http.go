@@ -71,6 +71,9 @@ func NewHandler(
 	robots.Handle("/{id:[0-9]+}", monkey(robotPutByIDHandler, "")).Methods("PUT")
 	robots.Handle("/{id:[0-9]+}", monkey(robotGetByIDHandler, "")).Methods("GET")
 	robots.Handle("/{id:[0-9]+}", monkey(robotDeleteHandler, "")).Methods("DELETE")
+	robots.Handle("/{id:[0-9]+}/lspeed", monkey(robotSetLeftSpeedHandler, "")).Methods("PUT")
+	robots.Handle("/{id:[0-9]+}/rspeed", monkey(robotSetRightSpeedHandler, "")).Methods("PUT")
+	robots.Handle("/{id:[0-9]+}/halt", monkey(robotHaltMotorHandler, "")).Methods("PUT")
 
 	return stripPrefix(server.BaseURL, r), nil
 }

@@ -47,6 +47,11 @@ export default (state: RobotsState = defaultState, action: AnyAction): RobotsSta
             const combined = action.payload.array.map(
                 (robot: any): Robot => ({
                     instance: robot,
+                    state: {
+                        id: robot.id,
+                        hostname: robot.hostname,
+                        temperature: robot.temperature,
+                    },
                 }),
             );
 
@@ -91,6 +96,11 @@ export default (state: RobotsState = defaultState, action: AnyAction): RobotsSta
                             return {
                                 ..._robot,
                                 instance: robot,
+                                state: {
+                                    id: robot.id,
+                                    hostname: robot.hostname,
+                                    temperature: robot.temperature,
+                                },
                             };
                         }
 
@@ -115,6 +125,63 @@ export default (state: RobotsState = defaultState, action: AnyAction): RobotsSta
                         return robot;
                     },
                 ),
+            };
+        }
+        case RobotsActionTypes.UPDATE_ROBOT_STATE: {
+            const {
+                id,
+                hostname,
+                temperature,
+            } = action.payload;
+
+            return {
+                ...state,
+                current: state.current.map(
+                    (robot): Robot => {
+                        if (robot.instance.id === id) {
+                            return {
+                                ...robot,
+                                state: {
+                                    ...state,
+                                    id,
+                                    hostname,
+                                    temperature,
+                                },
+                            };
+                        }
+                        return robot;
+                    },
+                ),
+            };
+        }
+        case RobotsActionTypes.SET_LEFT_MOTOR_SPEED: {
+            return {
+                ...state,
+                updating: true,
+            };
+        }
+        case RobotsActionTypes.SET_LEFT_MOTOR_SPEED_SUCCESS: {
+            return {
+                ...state,
+                updating: false,
+                current: state.current.map(
+                    (robot): Robot => {
+                        if (robot.instance.id === action.payload.robot.id) {
+                            return {
+                                ...robot,
+                                instance: action.payload.robot,
+                            };
+                        }
+
+                        return robot;
+                    },
+                ),
+            };
+        }
+        case RobotsActionTypes.SET_LEFT_MOTOR_SPEED_FAILED: {
+            return {
+                ...state,
+                updating: true,
             };
         }
         default:

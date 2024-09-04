@@ -2,7 +2,7 @@ import { ThunkAction } from 'utils/redux';
 import Socket from 'utils/socket';
 import { getTOYStore } from 'toy-store';
 import {
-    updateRobotStateAsync,
+    updateRobotState,
 } from 'actions/robots-actions';
 
 export const SocketEvents = {
@@ -26,13 +26,12 @@ const handleDisconnect = () => {
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const handleStatusChanged = (msg: any) => {
     console.log('Handle status info:', msg);
-    // console.log('Handle status robot id:', msg.robot_id);
-    // console.log('Handle status robot_state:', msg.robot_state);
-    // getTOYStore().dispatch(updateRobotStateAsync(msg.robot_id, msg.robot_state));
+    getTOYStore().dispatch(updateRobotState(+msg.id, msg.hostname, msg.temperature));
 };
 
 export const webSocketActionsAsync = (): ThunkAction => async () => {
     const url = new URL(window.location.href);
+    console.log('hostname:', url.hostname);
     const ws = new WebSocket(`ws://${url.hostname}:5050`);
 
     const socket = new Socket(ws);

@@ -6,23 +6,23 @@ import (
 )
 
 type Hub struct {
-	clients             map[*Client]bool
-	boradcastRobotState chan []byte
-	register            chan *Client
-	unregister          chan *Client
+	clients        map[*Client]bool
+	boradcastRobot chan []byte
+	register       chan *Client
+	unregister     chan *Client
 }
 
 func NewWebSocketHub() *Hub {
 	return &Hub{
-		clients:             make(map[*Client]bool),
-		boradcastRobotState: make(chan []byte),
-		register:            make(chan *Client),
-		unregister:          make(chan *Client),
+		clients:        make(map[*Client]bool),
+		boradcastRobot: make(chan []byte),
+		register:       make(chan *Client),
+		unregister:     make(chan *Client),
 	}
 }
 
 func (h *Hub) BroadcastRobotStateMessage(message []byte) {
-	h.boradcastRobotState <- message
+	h.boradcastRobot <- message
 }
 
 func (h *Hub) HubStart() {
@@ -34,7 +34,7 @@ func (h *Hub) HubStart() {
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 			}
-		case message := <-h.boradcastRobotState:
+		case message := <-h.boradcastRobot:
 			var t BroadcastRobotState
 			for client := range h.clients {
 				err := json.Unmarshal(message, &t)

@@ -20,10 +20,10 @@ int create_gui()
         break;
     
     case 0:
-        if (execl("/usr/bin/google-chrome-stable", "google-chrome-stable", "http://localhost:8284", NULL)) {
+        //if (execl("/usr/bin/google-chrome-stable", "google-chrome-stable", "http://localhost:8284", NULL)) {
             /*int execl(char const *path, char const *arg0, ...);*/
-            printf("gui exec failed\n");
-        }
+          //  printf("gui exec failed\n");
+        //}
 
         break;
 

@@ -1,0 +1,10 @@
+*.c linguist-language=C
+*.cpp linguist-language=C++
+
+# Ignore web-related files from language statistics
+toy-fe/* linguist-vendored
+toy-be/* linguist-vendored
+*.css linguist-vendored
+*.js linguist-vendored
+*.html linguist-vendored
+*.go linguist-vendored

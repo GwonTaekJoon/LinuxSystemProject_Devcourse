@@ -10,7 +10,9 @@
 #include <mqueue.h>
 #include <toy_message.h>
 
-#define NUM_MESSAGES 10
+#include <sys/stat.h>
+
+#define NUM_MESSAGES 100
 
 static mqd_t watchdog_queue;
 static mqd_t monitor_queue;
@@ -47,6 +49,7 @@ int create_message_queue(mqd_t *msgq_ptr, const char *queue_name,\
     struct mq_attr mq_attrib;
     int mq_errno;
     mqd_t msgq;
+    mode_t old_umask;
 
     printf("%s name=%s nummsgs= %d\n", __func__, queue_name, num_messages);
     memset(&mq_attrib, 0, sizeof(mq_attrib));
@@ -54,9 +57,10 @@ int create_message_queue(mqd_t *msgq_ptr, const char *queue_name,\
     mq_attrib.mq_maxmsg = num_messages;
 
     mq_unlink(queue_name);
-
+    
+    old_umask = umask(0);
     msgq = mq_open(queue_name, O_RDWR | O_CREAT | O_CLOEXEC, 0777, &mq_attrib);
-
+    umask(old_umask);
     if(msgq == -1) {
 
 	    printf("%s queue = %s already exists so try to open\n", __func__,\
@@ -113,8 +117,8 @@ int main()
     retcode = create_message_queue(&camera_queue, "/camera_queue", \
 		    NUM_MESSAGES, sizeof(toy_msg_t));
     assert(retcode == 0);
-    retcode = create_message_queue(&engine_queue, "/engine_queue", \
-	        NUM_MESSAGES, sizeof(toy_msg_t));
+    retcode = create_message_queue(&engine_queue, "/mq_be_to_sys", \
+	        NUM_MESSAGES, sizeof(robot_message_t));
     assert(retcode == 0);
     retcode = create_message_queue(&backend_queue, "/mq_sys_to_be", \
             NUM_MESSAGES, sizeof(robot_message_t));
@@ -130,14 +134,14 @@ int main()
     printf("create_input()...\n");
     ipid = create_input();
 
-    printf("create_gui()...\n");
-    gpid = create_gui();
+    //printf("create_gui()...\n");
+    //gpid = create_gui();
 
 
 
 
     waitpid(spid, &status, 0);
-    waitpid(gpid, &status, 0);
+    //waitpid(gpid, &status, 0);
     waitpid(ipid, &status, 0);
     waitpid(wpid, &status, 0);
 

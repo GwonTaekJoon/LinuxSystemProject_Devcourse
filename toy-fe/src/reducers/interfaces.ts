@@ -13,8 +13,15 @@ export interface RobotsQuery {
     [key: string]: string | number | null;
 }
 
+export interface RobotState {
+    id: number;
+    hostname: string;
+    temperature: string;
+}
+
 export interface Robot {
     instance: any;
+    state: RobotState;
 }
 
 export interface RobotsState {
